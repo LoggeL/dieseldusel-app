@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../services/database.dart';
 import '../models/fuel_log.dart';
 import '../widgets/stat_card.dart';
+import '../services/updater.dart';
 import 'manual_entry.dart';
 import 'scan.dart';
 
@@ -23,6 +24,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _checkUpdate();
+  }
+
+  Future<void> _checkUpdate() async {
+    final update = await AppUpdater.checkForUpdate();
+    if (update != null && mounted) {
+      AppUpdater.showUpdateDialog(context, update);
+    }
   }
 
   Future<void> _loadData() async {
