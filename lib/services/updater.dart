@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.0.0';
+const String _currentVersion = '1.1.0';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
