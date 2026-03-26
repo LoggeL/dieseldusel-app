@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import '../services/updater.dart';
 import '../services/database.dart';
 import '../models/fuel_log.dart';
 
@@ -175,9 +176,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text('DieselDusel', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('Version 1.0.0', style: Theme.of(context).textTheme.bodySmall),
+                Text('Version 1.1.0', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text('Fahrtenbuch App', style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Suche nach Updates...')),
+                    );
+                    final update = await AppUpdater.checkForUpdate();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    if (update != null) {
+                      AppUpdater.showUpdateDialog(context, update);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('App ist aktuell ✓')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.system_update, size: 18),
+                  label: const Text('Nach Updates suchen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B5E20),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
