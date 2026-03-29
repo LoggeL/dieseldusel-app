@@ -21,6 +21,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _loadLogs();
   }
 
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _loadLogs();
+  }
+
   Future<void> _loadLogs() async {
     final logs = await _db.getAllLogs();
     if (mounted) setState(() => _logs = logs);

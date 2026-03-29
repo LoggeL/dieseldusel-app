@@ -27,6 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkUpdate();
   }
 
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _loadData(); // Reload when widget is rebuilt (tab switch)
+  }
+
   Future<void> _checkUpdate() async {
     final update = await AppUpdater.checkForUpdate();
     if (update != null && mounted) {

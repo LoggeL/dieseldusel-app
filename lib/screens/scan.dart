@@ -129,7 +129,8 @@ class _ScanScreenState extends State<ScanScreen> {
     final saved = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => ManualEntryScreen(existingLog: log)));
     if (saved == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eintrag gespeichert ✓')));
-      _reset();
+      // Pop back to main shell (home)
+      Navigator.popUntil(context, (route) => route.isFirst);
     }
   }
 
