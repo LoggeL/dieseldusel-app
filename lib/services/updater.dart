@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.1.1';
+const String _currentVersion = '1.2.0';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
@@ -22,7 +23,6 @@ class AppUpdater {
       final tagName = (data['tag_name'] ?? '').toString().replaceAll('v', '');
       final assets = data['assets'] as List? ?? [];
 
-      // Find APK asset
       String? apkUrl;
       for (final asset in assets) {
         final name = asset['name']?.toString() ?? '';
@@ -35,7 +35,6 @@ class AppUpdater {
       if (apkUrl == null) return null;
       if (tagName == _currentVersion) return null;
 
-      // Simple version comparison
       if (_isNewer(tagName, _currentVersion)) {
         return {
           'version': tagName,
@@ -92,7 +91,7 @@ class AppUpdater {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _downloadAndInstall(context, update['url']);
+              _openDownloadUrl(context, update['url']);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50)),
             child: const Text('Jetzt updaten'),
@@ -102,43 +101,22 @@ class AppUpdater {
     );
   }
 
-  static Future<void> _downloadAndInstall(BuildContext context, String url) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(content: Text('Download läuft...'), duration: Duration(seconds: 30)),
-    );
-
+  /// Opens the APK download URL in the browser — Android handles the download + install prompt
+  static Future<void> _openDownloadUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
     try {
-      final res = await http.get(Uri.parse(url)).timeout(const Duration(minutes: 5));
-      if (res.statusCode != 200) {
-        scaffoldMessenger.hideCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Download fehlgeschlagen')));
-        return;
-      }
-
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/dieseldusel-update.apk');
-      await file.writeAsBytes(res.bodyBytes);
-
-      scaffoldMessenger.hideCurrentSnackBar();
-
-      // Open APK for installation via intent
-      final result = await Process.run('am', [
-        'start', '-a', 'android.intent.action.VIEW',
-        '-t', 'application/vnd.android.package-archive',
-        '-d', 'file://${file.path}',
-        '--grant-read-uri-permission',
-      ]);
-
-      if (result.exitCode != 0) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('APK gespeichert: ${file.path}\nBitte manuell installieren.')),
-        );
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: try without check
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      scaffoldMessenger.hideCurrentSnackBar();
-      scaffoldMessenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Konnte Browser nicht öffnen: $e')),
+        );
+      }
     }
   }
 }
