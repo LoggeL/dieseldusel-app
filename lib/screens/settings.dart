@@ -6,8 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/updater.dart';
 import '../services/database.dart';
+import '../services/import_service.dart';
 import '../models/fuel_log.dart';
-import '../utils/app_date.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +21,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _apiKeyCtrl = TextEditingController();
   final _modelCtrl = TextEditingController();
   final _db = DatabaseService();
+  final _importService = const ImportService();
+
+  static const _demoHeaders = [
+    'Datum',
+    'Gesamt-km',
+    'Trip-km',
+    'Liter',
+    'Kosten',
+    'EUR/Liter',
+    'Verbrauch',
+    'Notiz',
+  ];
+
+  static const _demoRow = [
+    '2026-03-08',
+    '155923',
+    '768.6',
+    '59.31',
+    '119.75',
+    '2.019',
+    '7.3',
+    'Shell Kaiserslautern',
+  ];
 
   @override
   void initState() {
@@ -52,10 +75,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _importCsv() async {
+  Future<void> _importData() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv', 'txt'],
+      allowedExtensions: ['csv', 'txt', 'xls', 'xlsx'],
     );
     if (result == null || result.files.isEmpty) return;
 
@@ -63,70 +86,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (path == null) return;
 
     final file = File(path);
-    final content = await file.readAsString();
-    final lines =
-        content.split('\n').where((l) => l.trim().isNotEmpty).toList();
 
-    if (lines.isEmpty) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Leere Datei')));
-      return;
-    }
-
-    int imported = 0;
-    int errors = 0;
-
-    for (final line in lines) {
-      try {
-        // Support both ; and , and \t separators
-        String sep = ';';
-        if (!line.contains(';')) {
-          sep = line.contains('\t') ? '\t' : ',';
-        }
-        final parts = line.split(sep).map((p) => p.trim()).toList();
-        if (parts.length < 3) continue;
-
-        final parsedDate = tryParseAppDate(parts[0]);
-        if (parsedDate == null) continue;
-
-        final log = FuelLog(
-          date: normalizeAppDate(parts[0]),
-          totalKm: parts.length > 1
-              ? int.tryParse(
-                      parts[1].replaceAll('.', '').replaceAll(',', '')) ??
-                  0
-              : 0,
-          tripKm: parts.length > 2
-              ? double.tryParse(parts[2].replaceAll(',', '.')) ?? 0
-              : 0,
-          liters: parts.length > 3
-              ? double.tryParse(parts[3].replaceAll(',', '.')) ?? 0
-              : 0,
-          costs: parts.length > 4
-              ? double.tryParse(parts[4].replaceAll(',', '.')) ?? 0
-              : 0,
-          euroPerLiter: parts.length > 5
-              ? double.tryParse(parts[5].replaceAll(',', '.')) ?? 0
-              : 0,
-          consumption: parts.length > 6
-              ? double.tryParse(parts[6].replaceAll(',', '.')) ?? 0
-              : 0,
-          note: parts.length > 7 ? parts[7] : '',
+    try {
+      final result = await _importService.parseFile(file);
+      if (result.logs.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Keine gültigen Einträge gefunden')),
         );
-
-        await _db.insertLog(log);
-        imported++;
-      } catch (e) {
-        errors++;
+        return;
       }
-    }
 
-    if (mounted) {
+      for (final log in result.logs) {
+        await _db.insertLog(log);
+      }
+
+      if (!mounted) return;
+      final imported = result.logs.length;
+      final skipped = result.skippedRows;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                '$imported Einträge importiert${errors > 0 ? " ($errors Fehler)" : ""}')),
+          content: Text(
+            '$imported Einträge importiert${skipped > 0 ? " ($skipped Zeilen übersprungen)" : ""}',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import fehlgeschlagen: $e')),
       );
     }
   }
@@ -251,9 +239,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(),
           const SizedBox(height: 16),
           OutlinedButton.icon(
+            onPressed: _importData,
+            icon: const Icon(Icons.upload_file),
+            label: const Text('CSV/Excel importieren'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
             onPressed: _exportCsv,
             icon: const Icon(Icons.download),
             label: const Text('Als CSV exportieren'),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Demo-Tabelle für den Import',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'CSV, XLS und XLSX werden importiert, wenn die Spalten dieser Struktur folgen.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowHeight: 40,
+                      dataRowMinHeight: 40,
+                      dataRowMaxHeight: 52,
+                      columns: _demoHeaders
+                          .map((header) => DataColumn(label: Text(header)))
+                          .toList(),
+                      rows: [
+                        DataRow(
+                          cells: _demoRow
+                              .map((value) => DataCell(Text(value)))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
