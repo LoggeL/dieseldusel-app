@@ -50,11 +50,11 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final _pages = const [
-    HomeScreen(),
-    HistoryScreen(),
-    StatisticsScreen(),
-    SettingsScreen(),
+  List<Widget> get _pages => [
+    HomeScreen(key: ValueKey('home-$_currentIndex')),
+    HistoryScreen(key: ValueKey('history-$_currentIndex')),
+    const StatisticsScreen(),
+    const SettingsScreen(),
   ];
 
   @override

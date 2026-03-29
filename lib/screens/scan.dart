@@ -121,7 +121,7 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  void _reviewAndSave() {
+  Future<void> _reviewAndSave() async {
     final log = FuelLog(
       date: _scanDate ?? DateFormat('yyyy-MM-dd').format(DateTime.now()),
       totalKm: _totalKm ?? 0,
@@ -134,10 +134,26 @@ class _ScanScreenState extends State<ScanScreen> {
       consumption: _consumption ?? 0,
     );
 
-    Navigator.pushReplacement(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => ManualEntryScreen(existingLog: log)),
     );
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Eintrag gespeichert ✓')),
+      );
+      // Reset scan state
+      setState(() {
+        _consumption = null;
+        _totalKm = null;
+        _tripKm = null;
+        _pricePerLiter = null;
+        _totalCost = null;
+        _liters = null;
+        _scanDate = null;
+        _error = null;
+      });
+    }
   }
 
   bool get _hasAnyData =>

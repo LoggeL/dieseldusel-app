@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.5.0';
+const String _currentVersion = '1.5.1';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
