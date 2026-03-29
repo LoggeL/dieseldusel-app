@@ -33,6 +33,42 @@ class _ScanScreenState extends State<ScanScreen> {
   String? _scanDate;
   String _firstType = ''; // 'dashboard' or 'receipt'
 
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+
+    final normalized = value.toString().trim().replaceAll(',', '.');
+    return double.tryParse(normalized);
+  }
+
+  int? _toInt(dynamic value) {
+    final parsed = _toDouble(value);
+    if (parsed == null) return null;
+    return parsed.round();
+  }
+
+  bool _hasDashboardData({
+    double? consumption,
+    int? totalKm,
+    double? tripKm,
+  }) {
+    return (consumption != null && consumption > 0) ||
+        (totalKm != null && totalKm > 0) ||
+        (tripKm != null && tripKm > 0);
+  }
+
+  bool _hasReceiptData({
+    double? pricePerLiter,
+    double? totalCost,
+    double? liters,
+    String? scanDate,
+  }) {
+    return (pricePerLiter != null && pricePerLiter > 0) ||
+        (totalCost != null && totalCost > 0) ||
+        (liters != null && liters > 0) ||
+        scanDate != null;
+  }
+
   Future<XFile?> _pickImage() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -85,13 +121,24 @@ class _ScanScreenState extends State<ScanScreen> {
       final model = await _getModel();
       final scanner = AiScanner(apiKey: apiKey, model: model);
       final result = await scanner.scanDashboard(File(image.path));
+      final consumption = _toDouble(result['consumption']);
+      final totalKm = _toInt(result['total_km']);
+      final tripKm = _toDouble(result['trip_km']);
+
+      if (!_hasDashboardData(
+        consumption: consumption,
+        totalKm: totalKm,
+        tripKm: tripKm,
+      )) {
+        throw Exception(
+          'Keine verwertbaren Werte im Bild erkannt. Bitte ein klareres Foto vom Armaturenbrett versuchen.',
+        );
+      }
+
       setState(() {
-        if (result['consumption'] != null)
-          _consumption = (result['consumption'] as num).toDouble();
-        if (result['total_km'] != null)
-          _totalKm = (result['total_km'] as num).toInt();
-        if (result['trip_km'] != null)
-          _tripKm = (result['trip_km'] as num).toDouble();
+        _consumption = consumption ?? _consumption;
+        _totalKm = totalKm ?? _totalKm;
+        _tripKm = tripKm ?? _tripKm;
         if (_firstType.isEmpty) {
           _firstType = 'dashboard';
           _step = ScanStep.chooseSecond;
@@ -129,16 +176,29 @@ class _ScanScreenState extends State<ScanScreen> {
       final scanner = AiScanner(apiKey: apiKey, model: model);
       final result = await scanner.scanReceipt(File(image.path));
       final parsedDate = tryParseAppDate(result['date']?.toString());
+      final pricePerLiter = _toDouble(result['price_per_liter']);
+      final totalCost = _toDouble(result['total_cost']);
+      final liters = _toDouble(result['liters']);
+      final scanDate = parsedDate == null
+          ? null
+          : normalizeAppDate(result['date']?.toString());
+
+      if (!_hasReceiptData(
+        pricePerLiter: pricePerLiter,
+        totalCost: totalCost,
+        liters: liters,
+        scanDate: scanDate,
+      )) {
+        throw Exception(
+          'Keine verwertbaren Werte auf dem Kassenzettel erkannt. Bitte ein schaerferes Foto versuchen.',
+        );
+      }
+
       setState(() {
-        if (result['price_per_liter'] != null)
-          _pricePerLiter = (result['price_per_liter'] as num).toDouble();
-        if (result['total_cost'] != null)
-          _totalCost = (result['total_cost'] as num).toDouble();
-        if (result['liters'] != null)
-          _liters = (result['liters'] as num).toDouble();
-        _scanDate = parsedDate == null
-            ? null
-            : normalizeAppDate(result['date']?.toString());
+        _pricePerLiter = pricePerLiter ?? _pricePerLiter;
+        _totalCost = totalCost ?? _totalCost;
+        _liters = liters ?? _liters;
+        _scanDate = scanDate ?? _scanDate;
         if (_firstType.isEmpty) {
           _firstType = 'receipt';
           _step = ScanStep.chooseSecond;
