@@ -72,7 +72,9 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     try {
-      final scanner = AiScanner(apiKey: apiKey);
+      final prefs = await SharedPreferences.getInstance();
+      final model = prefs.getString("openrouter_model") ?? "google/gemini-3-flash-preview";
+      final scanner = AiScanner(apiKey: apiKey, model: model);
       final result = await scanner.scanDashboard(File(image.path));
       setState(() {
         if (result['consumption'] != null) _consumption = (result['consumption'] as num).toDouble();
@@ -102,7 +104,9 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     try {
-      final scanner = AiScanner(apiKey: apiKey);
+      final prefs2 = await SharedPreferences.getInstance();
+      final model2 = prefs2.getString("openrouter_model") ?? "google/gemini-3-flash-preview";
+      final scanner = AiScanner(apiKey: apiKey, model: model2);
       final result = await scanner.scanReceipt(File(image.path));
       setState(() {
         if (result['price_per_liter'] != null) _pricePerLiter = (result['price_per_liter'] as num).toDouble();

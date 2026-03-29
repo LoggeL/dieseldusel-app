@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 
 class AiScanner {
   final String apiKey;
+  final String model;
 
-  AiScanner({required this.apiKey});
+  AiScanner({required this.apiKey, this.model = 'google/gemini-3-flash-preview'});
 
   Future<Map<String, dynamic>> scanDashboard(File imageFile) async {
     final base64Image = base64Encode(await imageFile.readAsBytes());
@@ -58,7 +59,7 @@ class AiScanner {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'model': 'google/gemini-3-flash-preview',
+        'model': model,
         'messages': [
           {
             'role': 'user',

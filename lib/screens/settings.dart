@@ -17,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
   final _apiKeyCtrl = TextEditingController();
+  final _modelCtrl = TextEditingController();
   final _db = DatabaseService();
 
   @override
@@ -29,12 +30,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     _nameCtrl.text = prefs.getString('user_name') ?? '';
     _apiKeyCtrl.text = prefs.getString('openrouter_api_key') ?? '';
+    _modelCtrl.text = prefs.getString('openrouter_model') ?? 'google/gemini-3-flash-preview';
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', _nameCtrl.text);
     await prefs.setString('openrouter_api_key', _apiKeyCtrl.text);
+    await prefs.setString('openrouter_model', _modelCtrl.text.trim().isEmpty ? 'google/gemini-3-flash-preview' : _modelCtrl.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Einstellungen gespeichert')),
@@ -112,6 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _apiKeyCtrl.dispose();
+    _modelCtrl.dispose();
     super.dispose();
   }
 
@@ -140,6 +144,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               prefixIcon: Icon(Icons.key),
               border: OutlineInputBorder(),
               helperText: 'Für die KI-Bilderkennung',
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _modelCtrl,
+            decoration: const InputDecoration(
+              labelText: 'KI Modell',
+              prefixIcon: Icon(Icons.smart_toy),
+              border: OutlineInputBorder(),
+              helperText: 'z.B. google/gemini-3-flash-preview',
             ),
           ),
           const SizedBox(height: 16),
@@ -176,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text('DieselDusel', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('Version 1.3.2', style: Theme.of(context).textTheme.bodySmall),
+                Text('Version 1.4.0', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text('Fahrtenbuch App', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 12),
