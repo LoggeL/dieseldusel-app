@@ -33,6 +33,29 @@ class _ScanScreenState extends State<ScanScreen> {
     return prefs.getString('openrouter_api_key');
   }
 
+
+  Future<XFile?> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Kamera'),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Galerie'),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+        ]),
+      ),
+    );
+    if (source == null) return null;
+    return _picker.pickImage(source: source);
+  }
+
   Future<void> _scanDashboard() async {
     final apiKey = await _getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
@@ -40,7 +63,7 @@ class _ScanScreenState extends State<ScanScreen> {
       return;
     }
 
-    final image = await _picker.pickImage(source: ImageSource.camera);
+    final image = await _pickImage();
     if (image == null) return;
 
     setState(() {
@@ -70,7 +93,7 @@ class _ScanScreenState extends State<ScanScreen> {
       return;
     }
 
-    final image = await _picker.pickImage(source: ImageSource.camera);
+    final image = await _pickImage();
     if (image == null) return;
 
     setState(() {
