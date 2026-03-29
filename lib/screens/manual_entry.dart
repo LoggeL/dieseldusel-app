@@ -85,6 +85,19 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now().add(const Duration(days: 1)),
       locale: const Locale('de', 'DE'),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF4CAF50),
+              onPrimary: Colors.white,
+              surface: Color(0xFF1B5E20),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) setState(() => _date = picked);
   }
