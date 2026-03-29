@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import '../models/fuel_log.dart';
 import '../services/database.dart';
@@ -79,31 +80,59 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    DateTime tempDate = _date;
+    await showModalBottomSheet(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      locale: const Locale('de', 'DE'),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData(
-            brightness: Brightness.dark,
-            colorSchemeSeed: const Color(0xFF4CAF50),
-            useMaterial3: true,
-            dialogBackgroundColor: const Color(0xFF1a1a2e),
-            scaffoldBackgroundColor: const Color(0xFF1a1a2e),
-          ),
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              alwaysUse24HourFormat: true,
+      backgroundColor: const Color(0xFF1a2e1a),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SizedBox(
+        height: 320,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+                  ),
+                  const Text('Datum wählen', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  TextButton(
+                    onPressed: () {
+                      setState(() => _date = tempDate);
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text('OK', style: TextStyle(color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             ),
-            child: child!,
-          ),
-        );
-      },
+            const Divider(height: 1, color: Colors.white24),
+            Expanded(
+              child: CupertinoTheme(
+                data: const CupertinoThemeData(
+                  brightness: Brightness.dark,
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _date,
+                  maximumDate: DateTime.now().add(const Duration(days: 1)),
+                  minimumDate: DateTime(2000),
+                  onDateTimeChanged: (d) => tempDate = d,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-    if (picked != null) setState(() => _date = picked);
   }
 
   Future<void> _save() async {
