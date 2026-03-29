@@ -87,15 +87,19 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       locale: const Locale('de', 'DE'),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF4CAF50),
-              onPrimary: Colors.white,
-              surface: Color(0xFF1B5E20),
-              onSurface: Colors.white,
-            ),
+          data: ThemeData(
+            brightness: Brightness.dark,
+            colorSchemeSeed: const Color(0xFF4CAF50),
+            useMaterial3: true,
+            dialogBackgroundColor: const Color(0xFF1a1a2e),
+            scaffoldBackgroundColor: const Color(0xFF1a1a2e),
           ),
-          child: child!,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              alwaysUse24HourFormat: true,
+            ),
+            child: child!,
+          ),
         );
       },
     );
