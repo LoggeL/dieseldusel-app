@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
@@ -96,6 +97,13 @@ class AppUpdater {
               Navigator.pop(ctx);
             },
             child: const Text('Später'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openBrowserDownload(context, update['url']);
+            },
+            child: const Text('APK im Browser'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -192,6 +200,30 @@ class AppUpdater {
           SnackBar(content: Text('Download fehlgeschlagen: $e')),
         );
       }
+    }
+  }
+
+  static Future<void> _openBrowserDownload(
+      BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('APK-Link ist ungueltig')),
+        );
+      }
+      return;
+    }
+
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Browser konnte nicht geoeffnet werden')),
+      );
     }
   }
 }
