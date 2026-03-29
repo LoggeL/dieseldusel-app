@@ -176,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text('DieselDusel', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('Version 1.3.1', style: Theme.of(context).textTheme.bodySmall),
+                Text('Version 1.3.2', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text('Fahrtenbuch App', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 12),

@@ -58,7 +58,7 @@ class AiScanner {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'model': 'google/gemini-3.1-flash-preview',
+        'model': 'google/gemini-3-flash-preview',
         'messages': [
           {
             'role': 'user',
