@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/updater.dart';
 import '../services/database.dart';
 import '../models/fuel_log.dart';
@@ -41,6 +42,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Einstellungen gespeichert')),
+      );
+    }
+  }
+
+
+  Future<void> _importCsv() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv', 'txt', 'xls', 'xlsx'],
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = File(result.files.single.path!);
+    final content = await file.readAsString();
+    final lines = content.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    
+    if (lines.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leere Datei')));
+      return;
+    }
+
+    // Skip header if present
+    int startIdx = 0;
+    if (lines[0].toLowerCase().contains('datum') || lines[0].toLowerCase().contains('date') || lines[0].toLowerCase().contains('km')) {
+      startIdx = 1;
+    }
+
+    int imported = 0;
+    int errors = 0;
+    
+    for (int i = startIdx; i < lines.length; i++) {
+      try {
+        // Support both ; and , and \t separators
+        String sep = ';';
+        if (!lines[i].contains(';')) {
+          sep = lines[i].contains('\t') ? '\t' : ',';
+        }
+        final parts = lines[i].split(sep).map((p) => p.trim()).toList();
+        if (parts.length < 3) continue;
+
+        final log = FuelLog(
+          date: parts.isNotEmpty ? parts[0] : '',
+          totalKm: parts.length > 1 ? int.tryParse(parts[1].replaceAll('.', '').replaceAll(',', '')) ?? 0 : 0,
+          tripKm: parts.length > 2 ? double.tryParse(parts[2].replaceAll(',', '.')) ?? 0 : 0,
+          liters: parts.length > 3 ? double.tryParse(parts[3].replaceAll(',', '.')) ?? 0 : 0,
+          costs: parts.length > 4 ? double.tryParse(parts[4].replaceAll(',', '.')) ?? 0 : 0,
+          euroPerLiter: parts.length > 5 ? double.tryParse(parts[5].replaceAll(',', '.')) ?? 0 : 0,
+          consumption: parts.length > 6 ? double.tryParse(parts[6].replaceAll(',', '.')) ?? 0 : 0,
+          note: parts.length > 7 ? parts[7] : '',
+        );
+        
+        await _db.insertLog(log);
+        imported++;
+      } catch (e) {
+        errors++;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$imported Einträge importiert${errors > 0 ? " ($errors Fehler)" : ""}')),
       );
     }
   }
@@ -190,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text('DieselDusel', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('Version 1.4.0', style: Theme.of(context).textTheme.bodySmall),
+                Text('Version 1.5.0', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
                 Text('Fahrtenbuch App', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 12),
