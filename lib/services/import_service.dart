@@ -89,8 +89,10 @@ class ImportService {
     reader.open();
 
     final rows = <List<Object?>>[];
-    for (final sheetName in reader.sheetNames) {
-      final sheet = reader.sheet(sheetName);
+    for (int sheetIndex = 0;
+        sheetIndex < reader.sheetNames.length;
+        sheetIndex++) {
+      final sheet = reader.sheet(sheetIndex);
       for (int rowIndex = sheet.firstRow;
           rowIndex < sheet.lastRow;
           rowIndex++) {
