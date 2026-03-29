@@ -27,6 +27,8 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   final _consumptionCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
+  bool get _isEditingPersistedLog => widget.existingLog?.id != null;
+
   @override
   void initState() {
     super.initState();
@@ -157,7 +159,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final log = FuelLog(
-      id: widget.existingLog?.id,
+      id: _isEditingPersistedLog ? widget.existingLog?.id : null,
       date: DateFormat('yyyy-MM-dd').format(_date),
       totalKm: int.tryParse(_totalKmCtrl.text) ?? 0,
       tripKm: double.tryParse(_tripKmCtrl.text) ?? 0,
@@ -168,7 +170,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       note: _noteCtrl.text,
     );
 
-    if (widget.existingLog != null) {
+    if (_isEditingPersistedLog) {
       await _db.updateLog(log);
     } else {
       await _db.insertLog(log);
@@ -180,7 +182,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat('dd.MM.yyyy').format(_date);
-    final isEditing = widget.existingLog != null;
+    final isEditing = _isEditingPersistedLog;
 
     return Scaffold(
       appBar: AppBar(
