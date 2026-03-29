@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.6.0';
+const String _currentVersion = '1.7.0';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
@@ -43,7 +43,6 @@ class AppUpdater {
           'name': data['name'] ?? 'Update verfügbar',
         };
       }
-
       return null;
     } catch (_) {
       return null;
@@ -66,7 +65,6 @@ class AppUpdater {
     final prefs = await SharedPreferences.getInstance();
     final dismissed = prefs.getString('dismissed_update');
     if (dismissed == update['version']) return;
-
     if (!context.mounted) return;
 
     showDialog(
@@ -91,7 +89,7 @@ class AppUpdater {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _openDownloadUrl(context, update['url']);
+              _downloadAndInstall(context, update['url'], update['version']);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50)),
             child: const Text('Jetzt updaten'),
@@ -101,20 +99,78 @@ class AppUpdater {
     );
   }
 
-  /// Opens the APK download URL in the browser — Android handles the download + install prompt
-  static Future<void> _openDownloadUrl(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
+  static Future<void> _downloadAndInstall(BuildContext context, String url, String version) async {
+    if (!context.mounted) return;
+
+    // Show download progress dialog
+    final progressNotifier = ValueNotifier<double>(0);
+    final statusNotifier = ValueNotifier<String>('Verbinde...');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update wird geladen'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          ValueListenableBuilder<String>(
+            valueListenable: statusNotifier,
+            builder: (_, status, __) => Text(status, style: const TextStyle(color: Colors.white70)),
+          ),
+          const SizedBox(height: 16),
+          ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (_, progress, __) => Column(children: [
+              LinearProgressIndicator(value: progress > 0 ? progress : null, color: const Color(0xFF4CAF50)),
+              const SizedBox(height: 8),
+              Text(progress > 0 ? '${(progress * 100).toInt()}%' : '...', style: const TextStyle(fontSize: 12)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback: try without check
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Download with progress
+      final request = http.Request('GET', Uri.parse(url));
+      final response = await http.Client().send(request);
+      final totalBytes = response.contentLength ?? 0;
+      final bytes = <int>[];
+      int received = 0;
+
+      statusNotifier.value = 'Lade APK herunter...';
+
+      await for (final chunk in response.stream) {
+        bytes.addAll(chunk);
+        received += chunk.length;
+        if (totalBytes > 0) {
+          progressNotifier.value = received / totalBytes;
+        }
+        statusNotifier.value = '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
+      }
+
+      // Save to cache directory
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/dieseldusel-$version.apk');
+      await file.writeAsBytes(bytes);
+
+      statusNotifier.value = 'Installiere...';
+
+      // Close progress dialog
+      if (context.mounted) Navigator.pop(context);
+
+      // Open APK for installation
+      final result = await OpenFilex.open(file.path, type: 'application/vnd.android.package-archive');
+
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Installation: ${result.message}')),
+        );
       }
     } catch (e) {
       if (context.mounted) {
+        Navigator.pop(context); // Close progress dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Konnte Browser nicht öffnen: $e')),
+          SnackBar(content: Text('Download fehlgeschlagen: $e')),
         );
       }
     }
