@@ -8,14 +8,17 @@ import 'package:open_filex/open_filex.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.7.1';
+const String _currentVersion = '1.8.0';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
     try {
-      final res = await http.get(
-        Uri.parse('https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest'),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .get(
+            Uri.parse(
+                'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest'),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (res.statusCode != 200) return null;
 
@@ -61,7 +64,8 @@ class AppUpdater {
     return false;
   }
 
-  static Future<void> showUpdateDialog(BuildContext context, Map<String, dynamic> update) async {
+  static Future<void> showUpdateDialog(
+      BuildContext context, Map<String, dynamic> update) async {
     final prefs = await SharedPreferences.getInstance();
     final dismissed = prefs.getString('dismissed_update');
     if (dismissed == update['version']) return;
@@ -71,13 +75,20 @@ class AppUpdater {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Update ${update['version']}'),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(update['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-          if (update['body'].toString().isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(update['body'], maxLines: 5, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-          ],
-        ]),
+        content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(update['name'],
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (update['body'].toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(update['body'],
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13)),
+              ],
+            ]),
         actions: [
           TextButton(
             onPressed: () {
@@ -91,7 +102,8 @@ class AppUpdater {
               Navigator.pop(ctx);
               _downloadAndInstall(context, update['url'], update['version']);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4CAF50)),
             child: const Text('Jetzt updaten'),
           ),
         ],
@@ -99,7 +111,8 @@ class AppUpdater {
     );
   }
 
-  static Future<void> _downloadAndInstall(BuildContext context, String url, String version) async {
+  static Future<void> _downloadAndInstall(
+      BuildContext context, String url, String version) async {
     if (!context.mounted) return;
 
     // Show download progress dialog
@@ -114,15 +127,19 @@ class AppUpdater {
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           ValueListenableBuilder<String>(
             valueListenable: statusNotifier,
-            builder: (_, status, __) => Text(status, style: const TextStyle(color: Colors.white70)),
+            builder: (_, status, __) =>
+                Text(status, style: const TextStyle(color: Colors.white70)),
           ),
           const SizedBox(height: 16),
           ValueListenableBuilder<double>(
             valueListenable: progressNotifier,
             builder: (_, progress, __) => Column(children: [
-              LinearProgressIndicator(value: progress > 0 ? progress : null, color: const Color(0xFF4CAF50)),
+              LinearProgressIndicator(
+                  value: progress > 0 ? progress : null,
+                  color: const Color(0xFF4CAF50)),
               const SizedBox(height: 8),
-              Text(progress > 0 ? '${(progress * 100).toInt()}%' : '...', style: const TextStyle(fontSize: 12)),
+              Text(progress > 0 ? '${(progress * 100).toInt()}%' : '...',
+                  style: const TextStyle(fontSize: 12)),
             ]),
           ),
         ]),
@@ -145,7 +162,8 @@ class AppUpdater {
         if (totalBytes > 0) {
           progressNotifier.value = received / totalBytes;
         }
-        statusNotifier.value = '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
+        statusNotifier.value =
+            '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
       }
 
       // Save to cache directory
@@ -159,7 +177,8 @@ class AppUpdater {
       if (context.mounted) Navigator.pop(context);
 
       // Open APK for installation
-      final result = await OpenFilex.open(file.path, type: 'application/vnd.android.package-archive');
+      final result = await OpenFilex.open(file.path,
+          type: 'application/vnd.android.package-archive');
 
       if (result.type != ResultType.done && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
