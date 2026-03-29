@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/updater.dart';
 import '../services/database.dart';
 import '../models/fuel_log.dart';
+import '../utils/app_date.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -31,14 +32,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     _nameCtrl.text = prefs.getString('user_name') ?? '';
     _apiKeyCtrl.text = prefs.getString('openrouter_api_key') ?? '';
-    _modelCtrl.text = prefs.getString('openrouter_model') ?? 'google/gemini-3-flash-preview';
+    _modelCtrl.text =
+        prefs.getString('openrouter_model') ?? 'google/gemini-3-flash-preview';
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', _nameCtrl.text);
     await prefs.setString('openrouter_api_key', _apiKeyCtrl.text);
-    await prefs.setString('openrouter_model', _modelCtrl.text.trim().isEmpty ? 'google/gemini-3-flash-preview' : _modelCtrl.text.trim());
+    await prefs.setString(
+        'openrouter_model',
+        _modelCtrl.text.trim().isEmpty
+            ? 'google/gemini-3-flash-preview'
+            : _modelCtrl.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Einstellungen gespeichert')),
@@ -46,53 +52,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
   Future<void> _importCsv() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv', 'txt', 'xls', 'xlsx'],
+      allowedExtensions: ['csv', 'txt'],
     );
     if (result == null || result.files.isEmpty) return;
 
-    final file = File(result.files.single.path!);
-    final content = await file.readAsString();
-    final lines = content.split('\n').where((l) => l.trim().isNotEmpty).toList();
-    
-    if (lines.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leere Datei')));
-      return;
-    }
+    final path = result.files.single.path;
+    if (path == null) return;
 
-    // Skip header if present
-    int startIdx = 0;
-    if (lines[0].toLowerCase().contains('datum') || lines[0].toLowerCase().contains('date') || lines[0].toLowerCase().contains('km')) {
-      startIdx = 1;
+    final file = File(path);
+    final content = await file.readAsString();
+    final lines =
+        content.split('\n').where((l) => l.trim().isNotEmpty).toList();
+
+    if (lines.isEmpty) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Leere Datei')));
+      return;
     }
 
     int imported = 0;
     int errors = 0;
-    
-    for (int i = startIdx; i < lines.length; i++) {
+
+    for (final line in lines) {
       try {
         // Support both ; and , and \t separators
         String sep = ';';
-        if (!lines[i].contains(';')) {
-          sep = lines[i].contains('\t') ? '\t' : ',';
+        if (!line.contains(';')) {
+          sep = line.contains('\t') ? '\t' : ',';
         }
-        final parts = lines[i].split(sep).map((p) => p.trim()).toList();
+        final parts = line.split(sep).map((p) => p.trim()).toList();
         if (parts.length < 3) continue;
 
+        final parsedDate = tryParseAppDate(parts[0]);
+        if (parsedDate == null) continue;
+
         final log = FuelLog(
-          date: parts.isNotEmpty ? parts[0] : '',
-          totalKm: parts.length > 1 ? int.tryParse(parts[1].replaceAll('.', '').replaceAll(',', '')) ?? 0 : 0,
-          tripKm: parts.length > 2 ? double.tryParse(parts[2].replaceAll(',', '.')) ?? 0 : 0,
-          liters: parts.length > 3 ? double.tryParse(parts[3].replaceAll(',', '.')) ?? 0 : 0,
-          costs: parts.length > 4 ? double.tryParse(parts[4].replaceAll(',', '.')) ?? 0 : 0,
-          euroPerLiter: parts.length > 5 ? double.tryParse(parts[5].replaceAll(',', '.')) ?? 0 : 0,
-          consumption: parts.length > 6 ? double.tryParse(parts[6].replaceAll(',', '.')) ?? 0 : 0,
+          date: normalizeAppDate(parts[0]),
+          totalKm: parts.length > 1
+              ? int.tryParse(
+                      parts[1].replaceAll('.', '').replaceAll(',', '')) ??
+                  0
+              : 0,
+          tripKm: parts.length > 2
+              ? double.tryParse(parts[2].replaceAll(',', '.')) ?? 0
+              : 0,
+          liters: parts.length > 3
+              ? double.tryParse(parts[3].replaceAll(',', '.')) ?? 0
+              : 0,
+          costs: parts.length > 4
+              ? double.tryParse(parts[4].replaceAll(',', '.')) ?? 0
+              : 0,
+          euroPerLiter: parts.length > 5
+              ? double.tryParse(parts[5].replaceAll(',', '.')) ?? 0
+              : 0,
+          consumption: parts.length > 6
+              ? double.tryParse(parts[6].replaceAll(',', '.')) ?? 0
+              : 0,
           note: parts.length > 7 ? parts[7] : '',
         );
-        
+
         await _db.insertLog(log);
         imported++;
       } catch (e) {
@@ -102,7 +124,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$imported Einträge importiert${errors > 0 ? " ($errors Fehler)" : ""}')),
+        SnackBar(
+            content: Text(
+                '$imported Einträge importiert${errors > 0 ? " ($errors Fehler)" : ""}')),
       );
     }
   }
@@ -122,7 +146,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final name = prefs.getString('user_name') ?? 'DieselDusel';
 
     final buffer = StringBuffer();
-    buffer.writeln('Fahrtenbuch - $name');
     buffer.writeln(FuelLog.csvHeader());
     for (final log in logs) {
       buffer.writeln(log.toCsvRow());
@@ -224,11 +247,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: const Icon(Icons.save),
             label: const Text('Einstellungen speichern'),
           ),
-
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
-
           OutlinedButton.icon(
             onPressed: _exportCsv,
             icon: const Icon(Icons.download),
@@ -243,18 +264,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: const Icon(Icons.delete_forever),
             label: const Text('Alle Daten löschen'),
           ),
-
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
           Center(
             child: Column(
               children: [
-                Text('DieselDusel', style: Theme.of(context).textTheme.titleMedium),
+                Text('DieselDusel',
+                    style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('Version 1.7.1', style: Theme.of(context).textTheme.bodySmall),
+                Text('Version 1.7.1',
+                    style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
-                Text('Fahrtenbuch App', style: Theme.of(context).textTheme.bodySmall),
+                Text('Fahrtenbuch App',
+                    style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () async {

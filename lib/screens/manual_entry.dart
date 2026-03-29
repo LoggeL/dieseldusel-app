@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import '../models/fuel_log.dart';
 import '../services/database.dart';
+import '../utils/app_date.dart';
 
 class ManualEntryScreen extends StatefulWidget {
   final FuelLog? existingLog;
@@ -31,7 +32,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     super.initState();
     final log = widget.existingLog;
     if (log != null) {
-      _date = DateTime.parse(log.date);
+      _date = tryParseAppDate(log.date) ?? DateTime.now();
       _totalKmCtrl.text = log.totalKm.toString();
       _tripKmCtrl.text = log.tripKm.toString();
       _litersCtrl.text = log.liters.toString();
@@ -63,18 +64,27 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     final tripKm = double.tryParse(_tripKmCtrl.text);
 
     // Auto-calc liters from costs and price
-    if (costs != null && eurPerLiter != null && eurPerLiter > 0 && _litersCtrl.text.isEmpty) {
+    if (costs != null &&
+        eurPerLiter != null &&
+        eurPerLiter > 0 &&
+        _litersCtrl.text.isEmpty) {
       _litersCtrl.text = (costs / eurPerLiter).toStringAsFixed(2);
     }
 
     // Auto-calc consumption from liters and trip
     final currentLiters = double.tryParse(_litersCtrl.text);
-    if (currentLiters != null && tripKm != null && tripKm > 0 && _consumptionCtrl.text.isEmpty) {
+    if (currentLiters != null &&
+        tripKm != null &&
+        tripKm > 0 &&
+        _consumptionCtrl.text.isEmpty) {
       _consumptionCtrl.text = (currentLiters / tripKm * 100).toStringAsFixed(1);
     }
 
     // Auto-calc EUR/liter from costs and liters
-    if (costs != null && currentLiters != null && currentLiters > 0 && _eurPerLiterCtrl.text.isEmpty) {
+    if (costs != null &&
+        currentLiters != null &&
+        currentLiters > 0 &&
+        _eurPerLiterCtrl.text.isEmpty) {
       _eurPerLiterCtrl.text = (costs / currentLiters).toStringAsFixed(3);
     }
   }
@@ -98,15 +108,21 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+                    child: const Text('Abbrechen',
+                        style: TextStyle(color: Colors.grey)),
                   ),
-                  const Text('Datum wählen', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text('Datum wählen',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.white)),
                   TextButton(
                     onPressed: () {
                       setState(() => _date = tempDate);
                       Navigator.pop(ctx);
                     },
-                    child: const Text('OK', style: TextStyle(color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
+                    child: const Text('OK',
+                        style: TextStyle(
+                            color: Color(0xFF4CAF50),
+                            fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -117,7 +133,8 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                 data: const CupertinoThemeData(
                   brightness: Brightness.dark,
                   textTheme: CupertinoTextThemeData(
-                    dateTimePickerTextStyle: TextStyle(color: Colors.white, fontSize: 20),
+                    dateTimePickerTextStyle:
+                        TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ),
                 child: CupertinoDatePicker(
@@ -136,8 +153,8 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     _autoCalculate();
+    if (!_formKey.currentState!.validate()) return;
 
     final log = FuelLog(
       id: widget.existingLog?.id,
@@ -187,14 +204,23 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
             ),
             const SizedBox(height: 16),
 
-            _buildField(_totalKmCtrl, 'Gesamt-km', Icons.speed, keyboard: TextInputType.number),
-            _buildField(_tripKmCtrl, 'Trip-km', Icons.route, keyboard: const TextInputType.numberWithOptions(decimal: true)),
-            _buildField(_litersCtrl, 'Liter', Icons.local_gas_station, keyboard: const TextInputType.numberWithOptions(decimal: true)),
-            _buildField(_costsCtrl, 'Kosten (€)', Icons.euro, keyboard: const TextInputType.numberWithOptions(decimal: true),
+            _buildField(_totalKmCtrl, 'Gesamt-km', Icons.speed,
+                keyboard: TextInputType.number),
+            _buildField(_tripKmCtrl, 'Trip-km', Icons.route,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
-            _buildField(_eurPerLiterCtrl, 'EUR/Liter', Icons.price_change, keyboard: const TextInputType.numberWithOptions(decimal: true),
+            _buildField(_litersCtrl, 'Liter', Icons.local_gas_station,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
-            _buildField(_consumptionCtrl, 'Verbrauch (l/100km)', Icons.opacity, keyboard: const TextInputType.numberWithOptions(decimal: true)),
+            _buildField(_costsCtrl, 'Kosten (€)', Icons.euro,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => _autoCalculate()),
+            _buildField(_eurPerLiterCtrl, 'EUR/Liter', Icons.price_change,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => _autoCalculate()),
+            _buildField(_consumptionCtrl, 'Verbrauch (l/100km)', Icons.opacity,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => _autoCalculate()),
             _buildField(_noteCtrl, 'Notiz', Icons.note, required: false),
 
             const SizedBox(height: 24),

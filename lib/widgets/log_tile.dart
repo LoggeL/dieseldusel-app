@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/fuel_log.dart';
+import '../utils/app_date.dart';
 
 class LogTile extends StatelessWidget {
   final FuelLog log;
@@ -10,7 +10,7 @@ class LogTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat('dd.MM.yyyy').format(DateTime.parse(log.date));
+    final date = formatAppDate(log.date);
     return ListTile(
       onTap: onTap,
       leading: CircleAvatar(
@@ -24,9 +24,7 @@ class LogTile extends StatelessWidget {
         '${log.costs.toStringAsFixed(2)} € · '
         '${log.consumption.toStringAsFixed(1)} l/100km',
       ),
-      trailing: log.note.isNotEmpty
-          ? const Icon(Icons.note, size: 16)
-          : null,
+      trailing: log.note.isNotEmpty ? const Icon(Icons.note, size: 16) : null,
     );
   }
 }
