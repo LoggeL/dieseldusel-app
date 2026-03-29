@@ -8,7 +8,7 @@ import 'package:open_filex/open_filex.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.8.0';
+const String _currentVersion = '1.8.1';
 
 class AppUpdater {
   static Future<Map<String, dynamic>?> checkForUpdate() async {
