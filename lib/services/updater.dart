@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -9,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String currentVersion = '1.9.3';
+// version is read dynamically from package_info_plus
 
 enum UpdateCheckStatus {
   upToDate,
@@ -35,6 +36,8 @@ class UpdateCheckResult {
 class AppUpdater {
   static Future<UpdateCheckResult> checkForUpdate() async {
     try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
       final res = await http
           .get(
             Uri.parse(

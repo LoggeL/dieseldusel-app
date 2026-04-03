@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
@@ -51,9 +52,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'Shell Kaiserslautern',
   ];
 
+  String _appVersion = '';
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) setState(() { _appVersion = info.version; });
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _loadSettings();
   }
 
@@ -279,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 16),
               const SizedBox(width: 6),
               Text(
-                'App ist aktuell (${result.latestVersion ?? currentVersion})',
+                'App ist aktuell (${result.latestVersion ?? _appVersion})',
                 style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12),
               ),
             ],
@@ -547,7 +556,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Text('Installiert',
                                 style: TextStyle(fontSize: 13)),
                             Text(
-                              'v$currentVersion',
+                              'v$_appVersion',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
