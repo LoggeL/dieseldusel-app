@@ -151,7 +151,8 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       note: _noteCtrl.text,
     );
 
-    if (widget.existingLog != null) {
+    final isExistingPersistedLog = widget.existingLog?.id != null;
+    if (isExistingPersistedLog) {
       await _db.updateLog(log);
     } else {
       await _db.insertLog(log);
@@ -163,7 +164,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat('dd.MM.yyyy').format(_date);
-    final isEditing = widget.existingLog != null;
+    final isEditing = widget.existingLog?.id != null;
 
     return Scaffold(
       appBar: AppBar(

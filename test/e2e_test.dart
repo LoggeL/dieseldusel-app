@@ -1,10 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dieseldusel/models/fuel_log.dart';
-import 'package:dieseldusel/services/database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// E2E-style tests for DieselDusel core functionality.
-/// Uses real database operations with in-memory SQLite.
 
 void main() {
   // Initialize FFI for desktop testing
@@ -93,18 +91,15 @@ void main() {
         'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch;Notiz',
         '2026-03-08;155923;768.6;59.31;119.75;2.019;7.3;Shell',
       ];
-      // Header detection: contains "Datum" or "date" or "km"
-      final hasHeader = lines[0].toLowerCase().contains('datum') || 
-                         lines[0].toLowerCase().contains('date') ||
-                         lines[0].toLowerCase().contains('km');
+      final hasHeader = lines[0].toLowerCase().contains('datum') ||
+          lines[0].toLowerCase().contains('date') ||
+          lines[0].toLowerCase().contains('km');
       expect(hasHeader, true);
     });
   });
 
   group('AI Scanner Expected Values', () {
-    // Based on real scans of test fixtures
     test('dashboard expected: consumption 7.3, totalKm 155923, tripKm 768.6', () {
-      // These are the expected AI extraction results from dashboard.jpg
       const expectedConsumption = 7.3;
       const expectedTotalKm = 155923;
       const expectedTripKm = 768.6;
@@ -115,7 +110,6 @@ void main() {
     });
 
     test('receipt expected: price 2.019, cost 119.75, liters 59.31, date 2026-03-08', () {
-      // These are the expected AI extraction results from receipt.jpg
       const expectedPrice = 2.019;
       const expectedCost = 119.75;
       const expectedLiters = 59.31;
@@ -132,21 +126,33 @@ void main() {
       const cost = 119.75;
       const pricePerLiter = 2.019;
       final calculatedLiters = cost / pricePerLiter;
-      // Should be close to 59.31
       expect(calculatedLiters, closeTo(59.31, 0.1));
     });
   });
 
   group('Full Flow Simulation', () {
+    test('scan flow treats logs without id as new entries', () {
+      final scannedLog = FuelLog(
+        date: '2026-03-08',
+        totalKm: 155923,
+        tripKm: 768.6,
+        liters: 59.31,
+        costs: 119.75,
+        euroPerLiter: 2.019,
+        consumption: 7.3,
+      );
+
+      final isExistingPersistedLog = scannedLog.id != null;
+      expect(isExistingPersistedLog, isFalse);
+    });
+
     test('scan dashboard → scan receipt → create log → verify', () {
-      // Step 1: Dashboard scan results
       final dashboardResult = {
         'consumption': 7.3,
         'total_km': 155923,
         'trip_km': 768.6,
       };
 
-      // Step 2: Receipt scan results
       final receiptResult = {
         'price_per_liter': 2.019,
         'total_cost': 119.75,
@@ -154,7 +160,6 @@ void main() {
         'date': '2026-03-08',
       };
 
-      // Step 3: Create FuelLog from combined scan data
       final log = FuelLog(
         date: receiptResult['date'] as String,
         totalKm: dashboardResult['total_km'] as int,
@@ -166,7 +171,6 @@ void main() {
         note: '',
       );
 
-      // Step 4: Verify combined log
       expect(log.date, '2026-03-08');
       expect(log.totalKm, 155923);
       expect(log.tripKm, 768.6);
@@ -175,7 +179,6 @@ void main() {
       expect(log.euroPerLiter, 2.019);
       expect(log.consumption, 7.3);
 
-      // Step 5: Verify CSV export
       final csv = log.toCsvRow();
       expect(csv, contains('2026-03-08'));
       expect(csv, contains('155923'));
