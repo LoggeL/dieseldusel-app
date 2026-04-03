@@ -81,7 +81,7 @@ class DatabaseService {
         COALESCE(SUM(liters), 0) as total_liters,
         COALESCE(AVG(consumption), 0) as avg_consumption,
         COALESCE(AVG(euro_per_liter), 0) as avg_price,
-        COALESCE(MAX(total_km) - MIN(total_km), 0) as total_km
+        COALESCE(SUM(trip_km), 0) as total_km
       FROM fuel_logs
     ''');
     final row = result.first;

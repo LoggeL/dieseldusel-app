@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String currentVersion = '1.8.4';
+const String currentVersion = '1.9.0';
 
 enum UpdateCheckStatus {
   upToDate,
