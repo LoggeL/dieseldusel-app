@@ -133,6 +133,24 @@ class ImportService {
         _extractNormalizedDate(row.isNotEmpty ? row[0] : null);
     if (normalizedDate == null) return null;
 
+    // Spalten (neu, 8-spaltig): Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch Bordcomputer;Notiz
+    // Alt 7-spaltig: col6 = berechneter Verbrauch (wird ignoriert/als BC übernommen), col7 = Notiz
+    // Alt 9-spaltig: col6 = berechnet, col7 = BC, col8 = Notiz
+    double? bordcomputer;
+    String note;
+    if (row.length >= 9) {
+      // Altes 9-spaltiges Format mit berechneter Spalte
+      bordcomputer = _parseNullableDoubleCell(_cellAt(row, 7));
+      note = _stringifyCell(_cellAt(row, 8));
+    } else if (row.length >= 8) {
+      // Neues 8-spaltiges Format oder altes 8-spaltiges
+      bordcomputer = _parseNullableDoubleCell(_cellAt(row, 6));
+      note = _stringifyCell(_cellAt(row, 7));
+    } else {
+      // 7-spaltig: col6 als BC-Wert übernehmen
+      bordcomputer = _parseNullableDoubleCell(_cellAt(row, 6));
+      note = '';
+    }
     return FuelLog(
       date: normalizedDate,
       totalKm: _parseIntCell(_cellAt(row, 1)),
@@ -140,9 +158,8 @@ class ImportService {
       liters: _parseDoubleCell(_cellAt(row, 3)),
       costs: _parseDoubleCell(_cellAt(row, 4)),
       euroPerLiter: _parseDoubleCell(_cellAt(row, 5)),
-      consumption: _parseDoubleCell(_cellAt(row, 6)),
-      consumptionBordcomputer: row.length > 8 ? _parseDoubleCell(_cellAt(row, 7)) : null,
-      note: _stringifyCell(_cellAt(row, row.length > 8 ? 8 : 7)),
+      consumptionBordcomputer: bordcomputer,
+      note: note,
     );
   }
 
@@ -239,6 +256,13 @@ class ImportService {
         final normalized = _stringifyCell(value).replaceAll(',', '.');
         return double.tryParse(normalized) ?? 0;
     }
+  }
+
+  double? _parseNullableDoubleCell(Object? value) {
+    if (value == null) return null;
+    final str = _stringifyCell(value);
+    if (str.isEmpty) return null;
+    return double.tryParse(str.replaceAll(',', '.'));
   }
 
   String _stringifyCell(Object? value) {

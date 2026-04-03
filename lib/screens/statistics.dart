@@ -70,8 +70,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       monthly[key]!['costs'] = (monthly[key]!['costs']! + log.costs);
       monthly[key]!['km'] = (monthly[key]!['km']! + log.tripKm);
       monthly[key]!['liters'] = (monthly[key]!['liters']! + log.liters);
-      if (log.consumption > 0) {
-        monthly[key]!['consumption_sum'] = (monthly[key]!['consumption_sum']! + log.consumption);
+      final calc = log.consumptionCalculated;
+      if (calc != null && calc > 0) {
+        monthly[key]!['consumption_sum'] = (monthly[key]!['consumption_sum']! + calc);
         monthly[key]!['fill_count'] = (monthly[key]!['fill_count']! + 1);
       }
     }
@@ -94,8 +95,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       yearly[key]!['costs'] = (yearly[key]!['costs']! + log.costs);
       yearly[key]!['km'] = (yearly[key]!['km']! + log.tripKm);
       yearly[key]!['liters'] = (yearly[key]!['liters']! + log.liters);
-      if (log.consumption > 0) {
-        yearly[key]!['consumption_sum'] = (yearly[key]!['consumption_sum']! + log.consumption);
+      final calc = log.consumptionCalculated;
+      if (calc != null && calc > 0) {
+        yearly[key]!['consumption_sum'] = (yearly[key]!['consumption_sum']! + calc);
         yearly[key]!['fill_count'] = (yearly[key]!['fill_count']! + 1);
       }
     }
@@ -234,7 +236,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     lineBarsData: [
                       LineChartBarData(
                         spots: consumptionLogs.asMap().entries.map((e) {
-                          return FlSpot(e.key.toDouble(), e.value.consumption);
+                          return FlSpot(e.key.toDouble(), e.value.consumptionCalculated ?? 0);
                         }).toList(),
                         isCurved: true,
                         color: const Color(0xFF4CAF50),

@@ -10,7 +10,6 @@ void main() {
       liters: 35.2,
       costs: 59.84,
       euroPerLiter: 1.699,
-      consumption: 7.8,
       note: 'Testfahrt',
     );
 
@@ -23,7 +22,8 @@ void main() {
     expect(restored.liters, 35.2);
     expect(restored.costs, 59.84);
     expect(restored.euroPerLiter, 1.699);
-    expect(restored.consumption, 7.8);
+    // consumption is now computed
+    expect(restored.consumptionCalculated, closeTo(7.81, 0.05));
     expect(restored.note, 'Testfahrt');
   });
 
@@ -35,12 +35,11 @@ void main() {
       liters: 35.2,
       costs: 59.84,
       euroPerLiter: 1.699,
-      consumption: 7.8,
       note: 'Test',
     );
 
-    expect(log.toCsvRow(), '2026-03-23;50000;450.5;35.2;59.84;1.699;7.8;;Test');
-    expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch (berechnet);Verbrauch (Bordcomputer);Notiz');
+    expect(log.toCsvRow(), '2026-03-23;50000;450.5;35.2;59.84;1.699;;Test');
+    expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch Bordcomputer;Notiz');
   });
 
   test('FuelLog copyWith', () {
@@ -51,7 +50,6 @@ void main() {
       liters: 35.2,
       costs: 59.84,
       euroPerLiter: 1.699,
-      consumption: 7.8,
     );
 
     final updated = log.copyWith(totalKm: 51000);

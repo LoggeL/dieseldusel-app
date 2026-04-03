@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         '${_lastLog!.liters.toStringAsFixed(1)} L · '
                         '${_lastLog!.costs.toStringAsFixed(2)} € · '
-                        '${_lastLog!.consumption.toStringAsFixed(1)} l/100km',
+                        '${(_lastLog!.consumptionCalculated ?? 0).toStringAsFixed(1)} l/100km',
                       ),
                     ],
                   ),
@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         lineBarsData: [
                           LineChartBarData(
                             spots: _recentLogs.asMap().entries.map((e) {
-                              return FlSpot(e.key.toDouble(), e.value.consumption);
+                              return FlSpot(e.key.toDouble(), e.value.consumptionCalculated ?? 0);
                             }).toList(),
                             isCurved: true,
                             color: const Color(0xFF4CAF50),

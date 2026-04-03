@@ -29,7 +29,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   final _litersCtrl = TextEditingController();
   final _costsCtrl = TextEditingController();
   final _eurPerLiterCtrl = TextEditingController();
-  final _consumptionCtrl = TextEditingController();
   final _consumptionBcCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
@@ -51,7 +50,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       _litersCtrl.text = log.liters.toString();
       _costsCtrl.text = log.costs.toString();
       _eurPerLiterCtrl.text = log.euroPerLiter.toString();
-      _consumptionCtrl.text = log.consumption.toString();
       _consumptionBcCtrl.text = log.consumptionBordcomputer?.toString() ?? '';
       _noteCtrl.text = log.note;
     } else {
@@ -66,7 +64,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     _litersCtrl.dispose();
     _costsCtrl.dispose();
     _eurPerLiterCtrl.dispose();
-    _consumptionCtrl.dispose();
     _consumptionBcCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
@@ -75,8 +72,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   void _autoCalculate() {
     final costs = double.tryParse(_costsCtrl.text);
     final eurPerLiter = double.tryParse(_eurPerLiterCtrl.text);
-    final liters = double.tryParse(_litersCtrl.text);
-    final tripKm = double.tryParse(_tripKmCtrl.text);
 
     // Auto-calc liters from costs and price
     if (costs != null &&
@@ -86,13 +81,8 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       _litersCtrl.text = (costs / eurPerLiter).toStringAsFixed(2);
     }
 
-    // Auto-calc consumption from liters and trip
-    final currentLiters = double.tryParse(_litersCtrl.text);
-    if (currentLiters != null && tripKm != null && tripKm > 0 && _consumptionCtrl.text.isEmpty) {
-      _consumptionCtrl.text = (currentLiters / tripKm * 100).toStringAsFixed(1);
-    }
-
     // Auto-calc EUR/liter from costs and liters
+    final currentLiters = double.tryParse(_litersCtrl.text);
     if (costs != null &&
         currentLiters != null &&
         currentLiters > 0 &&
@@ -176,7 +166,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       liters: double.tryParse(_litersCtrl.text) ?? 0,
       costs: double.tryParse(_costsCtrl.text) ?? 0,
       euroPerLiter: double.tryParse(_eurPerLiterCtrl.text) ?? 0,
-      consumption: double.tryParse(_consumptionCtrl.text) ?? 0,
       consumptionBordcomputer: _consumptionBcCtrl.text.isNotEmpty
           ? double.tryParse(_consumptionBcCtrl.text)
           : null,
@@ -254,9 +243,6 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
             _buildField(_eurPerLiterCtrl, 'EUR/Liter', Icons.price_change,
-                keyboard: const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (_) => _autoCalculate()),
-            _buildField(_consumptionCtrl, 'Verbrauch berechnet (l/100km)', Icons.opacity,
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
             _buildField(_consumptionBcCtrl, 'Verbrauch Bordcomputer (l/100km)', Icons.dashboard,
