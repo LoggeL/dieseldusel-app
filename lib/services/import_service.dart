@@ -141,7 +141,8 @@ class ImportService {
       costs: _parseDoubleCell(_cellAt(row, 4)),
       euroPerLiter: _parseDoubleCell(_cellAt(row, 5)),
       consumption: _parseDoubleCell(_cellAt(row, 6)),
-      note: _stringifyCell(_cellAt(row, 7)),
+      consumptionBordcomputer: row.length > 8 ? _parseDoubleCell(_cellAt(row, 7)) : null,
+      note: _stringifyCell(_cellAt(row, row.length > 8 ? 8 : 7)),
     );
   }
 
