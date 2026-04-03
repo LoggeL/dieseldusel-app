@@ -152,12 +152,26 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           children: [
             Expanded(
               child: StatCard(
-                title: 'Ø Verbrauch',
+                title: 'Ø Verbrauch (berechnet)',
                 value: '${(_stats['avg_consumption'] ?? 0).toStringAsFixed(1)} l/100km',
-                icon: Icons.local_gas_station,
+                icon: Icons.opacity,
               ),
             ),
             const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                title: 'Ø Verbrauch (BC)',
+                value: (_stats['avg_consumption_bc'] ?? 0) > 0
+                    ? '${(_stats['avg_consumption_bc'] ?? 0).toStringAsFixed(1)} l/100km'
+                    : '—',
+                icon: Icons.dashboard,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
             Expanded(
               child: StatCard(
                 title: 'Ø Preis/L',
@@ -165,6 +179,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 icon: Icons.price_change,
               ),
             ),
+            const SizedBox(width: 8),
+            const Expanded(child: SizedBox()),
           ],
         ),
         const SizedBox(height: 8),

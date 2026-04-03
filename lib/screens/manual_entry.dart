@@ -30,6 +30,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   final _costsCtrl = TextEditingController();
   final _eurPerLiterCtrl = TextEditingController();
   final _consumptionCtrl = TextEditingController();
+  final _consumptionBcCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
 
   bool get _isEditingPersistedLog => widget.existingLog?.id != null;
@@ -51,6 +52,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       _costsCtrl.text = log.costs.toString();
       _eurPerLiterCtrl.text = log.euroPerLiter.toString();
       _consumptionCtrl.text = log.consumption.toString();
+      _consumptionBcCtrl.text = log.consumptionBordcomputer?.toString() ?? '';
       _noteCtrl.text = log.note;
     } else {
       _date = DateTime.now();
@@ -65,6 +67,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     _costsCtrl.dispose();
     _eurPerLiterCtrl.dispose();
     _consumptionCtrl.dispose();
+    _consumptionBcCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
@@ -85,10 +88,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
 
     // Auto-calc consumption from liters and trip
     final currentLiters = double.tryParse(_litersCtrl.text);
-    if (currentLiters != null &&
-        tripKm != null &&
-        tripKm > 0 &&
-        _consumptionCtrl.text.isEmpty) {
+    if (currentLiters != null && tripKm != null && tripKm > 0 && _consumptionCtrl.text.isEmpty) {
       _consumptionCtrl.text = (currentLiters / tripKm * 100).toStringAsFixed(1);
     }
 
@@ -177,6 +177,9 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       costs: double.tryParse(_costsCtrl.text) ?? 0,
       euroPerLiter: double.tryParse(_eurPerLiterCtrl.text) ?? 0,
       consumption: double.tryParse(_consumptionCtrl.text) ?? 0,
+      consumptionBordcomputer: _consumptionBcCtrl.text.isNotEmpty
+          ? double.tryParse(_consumptionBcCtrl.text)
+          : null,
       note: _noteCtrl.text,
     );
 
@@ -253,9 +256,12 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
             _buildField(_eurPerLiterCtrl, 'EUR/Liter', Icons.price_change,
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
-            _buildField(_consumptionCtrl, 'Verbrauch (l/100km)', Icons.opacity,
+            _buildField(_consumptionCtrl, 'Verbrauch berechnet (l/100km)', Icons.opacity,
                 keyboard: const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _autoCalculate()),
+            _buildField(_consumptionBcCtrl, 'Verbrauch Bordcomputer (l/100km)', Icons.dashboard,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
+                required: false),
             _buildField(_noteCtrl, 'Notiz', Icons.note, required: false),
 
             const SizedBox(height: 24),

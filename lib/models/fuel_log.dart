@@ -6,7 +6,8 @@ class FuelLog {
   final double liters;
   final double costs;
   final double euroPerLiter;
-  final double consumption;
+  final double consumption; // berechnet: liters / tripKm * 100
+  final double? consumptionBordcomputer; // vom Bordcomputer abgelesen
   final String note;
   final String? createdAt;
 
@@ -19,6 +20,7 @@ class FuelLog {
     required this.costs,
     required this.euroPerLiter,
     required this.consumption,
+    this.consumptionBordcomputer,
     this.note = '',
     this.createdAt,
   });
@@ -33,6 +35,7 @@ class FuelLog {
       'costs': costs,
       'euro_per_liter': euroPerLiter,
       'consumption': consumption,
+      'consumption_bordcomputer': consumptionBordcomputer,
       'note': note,
     };
   }
@@ -47,6 +50,9 @@ class FuelLog {
       costs: (map['costs'] as num).toDouble(),
       euroPerLiter: (map['euro_per_liter'] as num).toDouble(),
       consumption: (map['consumption'] as num).toDouble(),
+      consumptionBordcomputer: map['consumption_bordcomputer'] != null
+          ? (map['consumption_bordcomputer'] as num).toDouble()
+          : null,
       note: (map['note'] as String?) ?? '',
       createdAt: map['created_at'] as String?,
     );
@@ -61,6 +67,8 @@ class FuelLog {
     double? costs,
     double? euroPerLiter,
     double? consumption,
+    double? consumptionBordcomputer,
+    bool clearConsumptionBordcomputer = false,
     String? note,
   }) {
     return FuelLog(
@@ -72,16 +80,19 @@ class FuelLog {
       costs: costs ?? this.costs,
       euroPerLiter: euroPerLiter ?? this.euroPerLiter,
       consumption: consumption ?? this.consumption,
+      consumptionBordcomputer: clearConsumptionBordcomputer
+          ? null
+          : consumptionBordcomputer ?? this.consumptionBordcomputer,
       note: note ?? this.note,
       createdAt: createdAt,
     );
   }
 
   String toCsvRow() {
-    return '$date;$totalKm;$tripKm;$liters;$costs;$euroPerLiter;$consumption;$note';
+    return '$date;$totalKm;$tripKm;$liters;$costs;$euroPerLiter;$consumption;${consumptionBordcomputer ?? ''};$note';
   }
 
   static String csvHeader() {
-    return 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch;Notiz';
+    return 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch (berechnet);Verbrauch (Bordcomputer);Notiz';
   }
 }

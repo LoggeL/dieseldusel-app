@@ -39,8 +39,8 @@ void main() {
       note: 'Test',
     );
 
-    expect(log.toCsvRow(), '2026-03-23;50000;450.5;35.2;59.84;1.699;7.8;Test');
-    expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch;Notiz');
+    expect(log.toCsvRow(), '2026-03-23;50000;450.5;35.2;59.84;1.699;7.8;;Test');
+    expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch (berechnet);Verbrauch (Bordcomputer);Notiz');
   });
 
   test('FuelLog copyWith', () {

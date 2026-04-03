@@ -20,7 +20,7 @@ class DatabaseService {
     final path = join(dbPath, 'dieseldusel.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE fuel_logs (
@@ -32,10 +32,18 @@ class DatabaseService {
             costs REAL,
             euro_per_liter REAL,
             consumption REAL,
+            consumption_bordcomputer REAL,
             note TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE fuel_logs ADD COLUMN consumption_bordcomputer REAL',
+          );
+        }
       },
     );
   }
@@ -80,6 +88,7 @@ class DatabaseService {
         COALESCE(SUM(costs), 0) as total_costs,
         COALESCE(SUM(liters), 0) as total_liters,
         COALESCE(AVG(consumption), 0) as avg_consumption,
+        COALESCE(AVG(CASE WHEN consumption_bordcomputer IS NOT NULL THEN consumption_bordcomputer END), 0) as avg_consumption_bc,
         COALESCE(AVG(euro_per_liter), 0) as avg_price,
         COALESCE(SUM(trip_km), 0) as total_km
       FROM fuel_logs
@@ -89,6 +98,7 @@ class DatabaseService {
       'total_costs': (row['total_costs'] as num).toDouble(),
       'total_liters': (row['total_liters'] as num).toDouble(),
       'avg_consumption': (row['avg_consumption'] as num).toDouble(),
+      'avg_consumption_bc': (row['avg_consumption_bc'] as num).toDouble(),
       'avg_price': (row['avg_price'] as num).toDouble(),
       'total_km': (row['total_km'] as num).toDouble(),
     };

@@ -32,6 +32,8 @@ class _LogTileState extends State<LogTile> {
   @override
   Widget build(BuildContext context) {
     final date = formatAppDate(widget.log.date);
+    final bc = widget.log.consumptionBordcomputer;
+    final bcStr = bc != null ? ' · ${bc.toStringAsFixed(1)} l/100km (BC)' : '';
     return ListTile(
       onTap: widget.onTap,
       leading: _imageFile != null
@@ -53,7 +55,8 @@ class _LogTileState extends State<LogTile> {
       subtitle: Text(
         '${widget.log.liters.toStringAsFixed(1)} L · '
         '${widget.log.costs.toStringAsFixed(2)} € · '
-        '${widget.log.consumption.toStringAsFixed(1)} l/100km',
+        '${widget.log.consumption.toStringAsFixed(1)} l/100km (berechnet)'
+        '$bcStr',
       ),
       trailing: widget.log.note.isNotEmpty ? const Icon(Icons.note, size: 16) : null,
     );

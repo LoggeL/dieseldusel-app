@@ -234,7 +234,8 @@ class _ScanScreenState extends State<ScanScreen> {
               : 0),
       costs: _totalCost ?? 0,
       euroPerLiter: _pricePerLiter ?? 0,
-      consumption: _consumption ?? 0,
+      consumption: 0, // wird im Formular aus Liter/km berechnet
+      consumptionBordcomputer: _consumption,
     );
     // Use the first scanned image (prefer dashboard/first)
     final sourceImage = _firstImagePath ?? _secondImagePath;

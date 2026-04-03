@@ -37,7 +37,7 @@ void main() {
     });
 
     test('CSV header matches expected format', () {
-      expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch;Notiz');
+      expect(FuelLog.csvHeader(), 'Datum;Gesamt-km;Trip-km;Liter;Kosten;EUR/Liter;Verbrauch (berechnet);Verbrauch (Bordcomputer);Notiz');
     });
 
     test('toCsvRow formats correctly', () {
@@ -46,7 +46,7 @@ void main() {
         liters: 59.31, costs: 119.75, euroPerLiter: 2.019,
         consumption: 7.3, note: 'Test',
       );
-      expect(log.toCsvRow(), '2026-03-08;155923;768.6;59.31;119.75;2.019;7.3;Test');
+      expect(log.toCsvRow(), '2026-03-08;155923;768.6;59.31;119.75;2.019;7.3;;Test');
     });
   });
 
