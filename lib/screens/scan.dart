@@ -32,6 +32,8 @@ class _ScanScreenState extends State<ScanScreen> {
   int? _totalKm;
   String? _scanDate;
   String _firstType = ''; // 'dashboard' or 'receipt'
+  String? _firstImagePath;
+  String? _secondImagePath;
 
   double? _toDouble(dynamic value) {
     if (value == null) return null;
@@ -110,6 +112,7 @@ class _ScanScreenState extends State<ScanScreen> {
     }
     final image = await _pickImage();
     if (image == null) return;
+    final imagePath = image.path;
 
     setState(() {
       _step =
@@ -141,8 +144,10 @@ class _ScanScreenState extends State<ScanScreen> {
         _tripKm = tripKm ?? _tripKm;
         if (_firstType.isEmpty) {
           _firstType = 'dashboard';
+          _firstImagePath = imagePath;
           _step = ScanStep.chooseSecond;
         } else {
+          _secondImagePath = imagePath;
           _step = ScanStep.review;
         }
       });
@@ -164,6 +169,7 @@ class _ScanScreenState extends State<ScanScreen> {
     }
     final image = await _pickImage();
     if (image == null) return;
+    final imagePath = image.path;
 
     setState(() {
       _step =
@@ -201,8 +207,10 @@ class _ScanScreenState extends State<ScanScreen> {
         _scanDate = scanDate ?? _scanDate;
         if (_firstType.isEmpty) {
           _firstType = 'receipt';
+          _firstImagePath = imagePath;
           _step = ScanStep.chooseSecond;
         } else {
+          _secondImagePath = imagePath;
           _step = ScanStep.review;
         }
       });
@@ -228,8 +236,10 @@ class _ScanScreenState extends State<ScanScreen> {
       euroPerLiter: _pricePerLiter ?? 0,
       consumption: _consumption ?? 0,
     );
+    // Use the first scanned image (prefer dashboard/first)
+    final sourceImage = _firstImagePath ?? _secondImagePath;
     final saved = await Navigator.push<bool>(context,
-        MaterialPageRoute(builder: (_) => ManualEntryScreen(existingLog: log)));
+        MaterialPageRoute(builder: (_) => ManualEntryScreen(existingLog: log, sourceImagePath: sourceImage)));
     if (saved == true && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Eintrag gespeichert ✓')));
@@ -249,6 +259,8 @@ class _ScanScreenState extends State<ScanScreen> {
       _totalCost = null;
       _liters = null;
       _scanDate = null;
+      _firstImagePath = null;
+      _secondImagePath = null;
       _error = null;
     });
   }

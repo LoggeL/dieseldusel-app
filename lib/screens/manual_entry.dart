@@ -1,14 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import '../models/fuel_log.dart';
 import '../services/database.dart';
 import '../utils/app_date.dart';
+import '../services/image_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ManualEntryScreen extends StatefulWidget {
   final FuelLog? existingLog;
+  final String? sourceImagePath;
 
-  const ManualEntryScreen({super.key, this.existingLog});
+  const ManualEntryScreen({super.key, this.existingLog, this.sourceImagePath});
 
   @override
   State<ManualEntryScreen> createState() => _ManualEntryScreenState();
@@ -17,6 +21,7 @@ class ManualEntryScreen extends StatefulWidget {
 class _ManualEntryScreenState extends State<ManualEntryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _db = DatabaseService();
+  File? _existingImage;
 
   late DateTime _date;
   final _totalKmCtrl = TextEditingController();
@@ -35,6 +40,11 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     final log = widget.existingLog;
     if (log != null) {
       _date = tryParseAppDate(log.date) ?? DateTime.now();
+      if (log.id != null) {
+        ImageStorageService().getImage(log.id!).then((f) {
+          if (f != null && mounted) setState(() => _existingImage = f);
+        });
+      }
       _totalKmCtrl.text = log.totalKm.toString();
       _tripKmCtrl.text = log.tripKm.toString();
       _litersCtrl.text = log.liters.toString();
@@ -173,7 +183,17 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
     if (_isEditingPersistedLog) {
       await _db.updateLog(log);
     } else {
-      await _db.insertLog(log);
+      final newId = await _db.insertLog(log);
+      // Save scan image if setting is enabled
+      if (widget.sourceImagePath != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final saveImages = prefs.getBool('save_scan_images') ?? false;
+        if (saveImages) {
+          try {
+            await ImageStorageService().saveImage(newId, widget.sourceImagePath!);
+          } catch (_) {}
+        }
+      }
     }
 
     if (mounted) Navigator.pop(context, true);
@@ -193,6 +213,19 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Scanned image preview
+            if (_existingImage != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  _existingImage!,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             // Date picker
             ListTile(
               leading: const Icon(Icons.calendar_today),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _checkingUpdate = false;
   UpdateCheckResult? _lastUpdateResult;
+  bool _saveScanImages = false;
 
   static const _demoHeaders = [
     'Datum',
@@ -60,6 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _apiKeyCtrl.text = prefs.getString('openrouter_api_key') ?? '';
     _modelCtrl.text =
         prefs.getString('openrouter_model') ?? 'google/gemini-3-flash-preview';
+    if (mounted) setState(() {
+      _saveScanImages = prefs.getBool('save_scan_images') ?? false;
+    });
   }
 
   Future<void> _saveSettings() async {
@@ -149,6 +154,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await Share.shareXFiles(
       [XFile(file.path)],
       subject: 'Fahrtenbuch Export - $name',
+    );
+  }
+
+
+  Future<void> _exportJson() async {
+    final logs = await _db.getAllLogs();
+    if (logs.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Keine Einträge zum Exportieren')),
+        );
+      }
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name') ?? 'DieselDusel';
+
+    final jsonData = jsonEncode({
+      'version': 1,
+      'exported_at': DateTime.now().toIso8601String(),
+      'entries': logs.map((l) => l.toMap()).toList(),
+    });
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/dieseldusel_backup.json');
+    await file.writeAsString(jsonData);
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      subject: 'DieselDusel Backup - $name',
     );
   }
 
@@ -347,6 +383,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          SwitchListTile(
+            value: _saveScanImages,
+            onChanged: (val) async {
+              setState(() => _saveScanImages = val);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('save_scan_images', val);
+            },
+            title: const Text('Bilder zu Einträgen speichern'),
+            subtitle: const Text('Scan-Fotos werden neben dem Eintrag gespeichert'),
+            secondary: const Icon(Icons.photo_camera),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+          ),
+          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _saveSettings,
             icon: const Icon(Icons.save),
@@ -363,8 +415,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _exportCsv,
-            icon: const Icon(Icons.download),
+            icon: const Icon(Icons.table_chart),
             label: const Text('Als CSV exportieren'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _exportJson,
+            icon: const Icon(Icons.backup),
+            label: const Text('JSON-Backup erstellen'),
           ),
           const SizedBox(height: 12),
           Card(
