@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -127,7 +128,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _exportCsv() async {
+  static const _storageChannel = MethodChannel('dieseldusel/storage');
+
+  Future<void> _exportCsvToDownloads() async {
     final logs = await _db.getAllLogs();
     if (logs.isEmpty) {
       if (mounted) {
@@ -138,23 +141,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('user_name') ?? 'DieselDusel';
-
     final buffer = StringBuffer();
     buffer.writeln(FuelLog.csvHeader());
     for (final log in logs) {
       buffer.writeln(log.toCsvRow());
     }
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/fahrtenbuch_export.csv');
-    await file.writeAsString(buffer.toString());
+    final timestamp = DateTime.now()
+        .toIso8601String()
+        .replaceAll(':', '-')
+        .substring(0, 19);
+    final filename = 'dieseldusel_$timestamp.csv';
 
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: 'Fahrtenbuch Export - $name',
-    );
+    try {
+      final savedPath = await _storageChannel.invokeMethod<String>(
+        'saveToDownloads',
+        {'filename': filename, 'content': buffer.toString()},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gespeichert: $savedPath'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export fehlgeschlagen: \${e.message}')),
+      );
+    }
   }
 
 
@@ -408,15 +424,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(),
           const SizedBox(height: 16),
           OutlinedButton.icon(
-            onPressed: _importData,
-            icon: const Icon(Icons.upload_file),
-            label: const Text('CSV/Excel importieren'),
+            onPressed: _exportCsvToDownloads,
+            icon: const Icon(Icons.download),
+            label: const Text('Daten exportieren (CSV)'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: _exportCsv,
-            icon: const Icon(Icons.table_chart),
-            label: const Text('Als CSV exportieren'),
+            onPressed: _importData,
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Daten importieren'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
