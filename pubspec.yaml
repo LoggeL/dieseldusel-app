@@ -1,7 +1,7 @@
 name: dieseldusel
 description: "DieselDusel - Fahrtenbuch App"
 publish_to: 'none'
-version: 1.8.3+18
+version: 1.8.4+19
 
 environment:
   sdk: ^3.8.1

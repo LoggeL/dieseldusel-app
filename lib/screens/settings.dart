@@ -23,6 +23,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _db = DatabaseService();
   final _importService = const ImportService();
 
+  bool _checkingUpdate = false;
+  UpdateCheckResult? _lastUpdateResult;
+
   static const _demoHeaders = [
     'Datum',
     'Gesamt-km',
@@ -184,6 +187,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _checkForUpdate() async {
+    setState(() {
+      _checkingUpdate = true;
+      _lastUpdateResult = null;
+    });
+
+    final result = await AppUpdater.checkForUpdate();
+
+    if (!mounted) return;
+    setState(() {
+      _checkingUpdate = false;
+      _lastUpdateResult = result;
+    });
+
+    if (result.status == UpdateCheckStatus.updateAvailable &&
+        result.update != null) {
+      AppUpdater.showUpdateDialog(context, result.update!);
+    }
+  }
+
+  Widget _buildUpdateStatusBadge() {
+    final result = _lastUpdateResult;
+    if (result == null) return const SizedBox.shrink();
+
+    switch (result.status) {
+      case UpdateCheckStatus.upToDate:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B5E20).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF4CAF50), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'App ist aktuell (${result.latestVersion ?? currentVersion})',
+                style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      case UpdateCheckStatus.updateAvailable:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.orange, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.system_update, color: Colors.orange, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Update ${result.latestVersion} verfügbar!',
+                style: const TextStyle(color: Colors.orange, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      case UpdateCheckStatus.networkError:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.red.shade300, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.wifi_off, color: Colors.red.shade300, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  result.errorMessage ?? 'Verbindungsfehler',
+                  style: TextStyle(color: Colors.red.shade300, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        );
+      case UpdateCheckStatus.noRelease:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info_outline, color: Colors.grey, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                result.errorMessage ?? 'Kein Release gefunden',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+    }
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -300,44 +417,122 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
-          Center(
-            child: Column(
-              children: [
-                Text('DieselDusel',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text('Version 1.8.3',
-                    style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 4),
-                Text('Fahrtenbuch App',
-                    style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Suche nach Updates...')),
-                    );
-                    final update = await AppUpdater.checkForUpdate();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    if (update != null) {
-                      AppUpdater.showUpdateDialog(context, update);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('App ist aktuell ✓')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.system_update, size: 18),
-                  label: const Text('Nach Updates suchen'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B5E20),
-                    foregroundColor: Colors.white,
+          // App info + Update section
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B5E20),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.local_gas_station,
+                            color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'DieselDusel',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Fahrtenbuch App',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  // Version info table
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Installiert',
+                                style: TextStyle(fontSize: 13)),
+                            Text(
+                              'v$currentVersion',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Aktuellste Version',
+                                style: TextStyle(fontSize: 13)),
+                            Text(
+                              _lastUpdateResult?.latestVersion != null
+                                  ? 'v${_lastUpdateResult!.latestVersion}'
+                                  : '—',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _checkingUpdate ? null : _checkForUpdate,
+                      icon: _checkingUpdate
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.system_update, size: 18),
+                      label: Text(_checkingUpdate
+                          ? 'Prüfe Updates...'
+                          : 'Nach Updates suchen'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B5E20),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  _buildUpdateStatusBadge(),
+                ],
+              ),
             ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );

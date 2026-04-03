@@ -34,9 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkUpdate() async {
-    final update = await AppUpdater.checkForUpdate();
-    if (update != null && mounted) {
-      AppUpdater.showUpdateDialog(context, update);
+    final result = await AppUpdater.checkForUpdate();
+    if (result.status == UpdateCheckStatus.updateAvailable &&
+        result.update != null && mounted) {
+      AppUpdater.showUpdateDialog(context, result.update!);
     }
   }
 

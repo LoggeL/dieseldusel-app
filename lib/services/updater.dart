@@ -9,10 +9,31 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String _repoOwner = 'LoggeL';
 const String _repoName = 'dieseldusel-app';
-const String _currentVersion = '1.8.3';
+const String currentVersion = '1.8.4';
+
+enum UpdateCheckStatus {
+  upToDate,
+  updateAvailable,
+  networkError,
+  noRelease,
+}
+
+class UpdateCheckResult {
+  final UpdateCheckStatus status;
+  final Map<String, dynamic>? update;
+  final String? latestVersion;
+  final String? errorMessage;
+
+  const UpdateCheckResult({
+    required this.status,
+    this.update,
+    this.latestVersion,
+    this.errorMessage,
+  });
+}
 
 class AppUpdater {
-  static Future<Map<String, dynamic>?> checkForUpdate() async {
+  static Future<UpdateCheckResult> checkForUpdate() async {
     try {
       final res = await http
           .get(
@@ -21,7 +42,19 @@ class AppUpdater {
           )
           .timeout(const Duration(seconds: 10));
 
-      if (res.statusCode != 200) return null;
+      if (res.statusCode == 404) {
+        return const UpdateCheckResult(
+          status: UpdateCheckStatus.noRelease,
+          errorMessage: 'Kein Release auf GitHub gefunden',
+        );
+      }
+
+      if (res.statusCode != 200) {
+        return UpdateCheckResult(
+          status: UpdateCheckStatus.networkError,
+          errorMessage: 'GitHub API Fehler (${res.statusCode})',
+        );
+      }
 
       final data = jsonDecode(res.body);
       final tagName = (data['tag_name'] ?? '').toString().replaceAll('v', '');
@@ -36,28 +69,49 @@ class AppUpdater {
         }
       }
 
-      if (apkUrl == null) return null;
-      if (tagName == _currentVersion) return null;
-
-      if (_isNewer(tagName, _currentVersion)) {
-        return {
-          'version': tagName,
-          'url': apkUrl,
-          'body': data['body'] ?? '',
-          'name': data['name'] ?? 'Update verfügbar',
-        };
+      if (apkUrl == null) {
+        return UpdateCheckResult(
+          status: UpdateCheckStatus.noRelease,
+          latestVersion: tagName,
+          errorMessage: 'Keine APK in neuestem Release gefunden',
+        );
       }
-      return null;
-    } catch (_) {
-      return null;
+
+      if (_isNewer(tagName, currentVersion)) {
+        return UpdateCheckResult(
+          status: UpdateCheckStatus.updateAvailable,
+          latestVersion: tagName,
+          update: {
+            'version': tagName,
+            'url': apkUrl,
+            'body': data['body'] ?? '',
+            'name': data['name'] ?? 'Update verfügbar',
+          },
+        );
+      }
+
+      return UpdateCheckResult(
+        status: UpdateCheckStatus.upToDate,
+        latestVersion: tagName,
+      );
+    } on SocketException {
+      return const UpdateCheckResult(
+        status: UpdateCheckStatus.networkError,
+        errorMessage: 'Keine Internetverbindung',
+      );
+    } catch (e) {
+      return UpdateCheckResult(
+        status: UpdateCheckStatus.networkError,
+        errorMessage: 'Fehler: $e',
+      );
     }
   }
 
   static bool _isNewer(String remote, String local) {
     final r = remote.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final l = local.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    while (r.length < 3) r.add(0);
-    while (l.length < 3) l.add(0);
+    while (r.length < 3) { r.add(0); }
+    while (l.length < 3) { l.add(0); }
     for (int i = 0; i < 3; i++) {
       if (r[i] > l[i]) return true;
       if (r[i] < l[i]) return false;
@@ -123,7 +177,6 @@ class AppUpdater {
       BuildContext context, String url, String version) async {
     if (!context.mounted) return;
 
-    // Show download progress dialog
     final progressNotifier = ValueNotifier<double>(0);
     final statusNotifier = ValueNotifier<String>('Verbinde...');
 
@@ -155,7 +208,6 @@ class AppUpdater {
     );
 
     try {
-      // Download with progress
       final request = http.Request('GET', Uri.parse(url));
       final response = await http.Client().send(request);
       final totalBytes = response.contentLength ?? 0;
@@ -174,17 +226,14 @@ class AppUpdater {
             '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
       }
 
-      // Save to cache directory
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/dieseldusel-$version.apk');
       await file.writeAsBytes(bytes);
 
       statusNotifier.value = 'Installiere...';
 
-      // Close progress dialog
       if (context.mounted) Navigator.pop(context);
 
-      // Open APK for installation
       final result = await OpenFilex.open(file.path,
           type: 'application/vnd.android.package-archive');
 
@@ -195,7 +244,7 @@ class AppUpdater {
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.pop(context); // Close progress dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Download fehlgeschlagen: $e')),
         );
@@ -209,7 +258,7 @@ class AppUpdater {
     if (uri == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('APK-Link ist ungueltig')),
+          const SnackBar(content: Text('APK-Link ist ungültig')),
         );
       }
       return;
@@ -222,7 +271,7 @@ class AppUpdater {
 
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Browser konnte nicht geoeffnet werden')),
+        const SnackBar(content: Text('Browser konnte nicht geöffnet werden')),
       );
     }
   }
