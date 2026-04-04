@@ -1,3 +1,4 @@
+import 'berechnungsgrundlagen_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/database.dart';
@@ -120,6 +121,18 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistik'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Berechnungsgrundlagen',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BerechnungsgrundlagenScreen(),
+              ),
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
