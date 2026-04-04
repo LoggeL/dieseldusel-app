@@ -65,16 +65,16 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         'costs': 0,
         'km': 0,
         'liters': 0,
-        'consumption_sum': 0,
-        'fill_count': 0,
+        'bc_km_sum': 0,
+        'bc_weighted_sum': 0,
       });
       monthly[key]!['costs'] = (monthly[key]!['costs']! + log.costs);
       monthly[key]!['km'] = (monthly[key]!['km']! + log.tripKm);
       monthly[key]!['liters'] = (monthly[key]!['liters']! + log.liters);
-      final calc = log.consumptionCalculated;
-      if (calc != null && calc > 0) {
-        monthly[key]!['consumption_sum'] = (monthly[key]!['consumption_sum']! + calc);
-        monthly[key]!['fill_count'] = (monthly[key]!['fill_count']! + 1);
+      final bc = log.consumptionBordcomputer;
+      if (bc != null && bc > 0) {
+        monthly[key]!['bc_km_sum'] = (monthly[key]!['bc_km_sum']! + log.tripKm);
+        monthly[key]!['bc_weighted_sum'] = (monthly[key]!['bc_weighted_sum']! + bc * log.tripKm);
       }
     }
     final sorted = monthly.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
@@ -90,16 +90,16 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         'costs': 0,
         'km': 0,
         'liters': 0,
-        'consumption_sum': 0,
-        'fill_count': 0,
+        'bc_km_sum': 0,
+        'bc_weighted_sum': 0,
       });
       yearly[key]!['costs'] = (yearly[key]!['costs']! + log.costs);
       yearly[key]!['km'] = (yearly[key]!['km']! + log.tripKm);
       yearly[key]!['liters'] = (yearly[key]!['liters']! + log.liters);
-      final calc = log.consumptionCalculated;
-      if (calc != null && calc > 0) {
-        yearly[key]!['consumption_sum'] = (yearly[key]!['consumption_sum']! + calc);
-        yearly[key]!['fill_count'] = (yearly[key]!['fill_count']! + 1);
+      final bc = log.consumptionBordcomputer;
+      if (bc != null && bc > 0) {
+        yearly[key]!['bc_km_sum'] = (yearly[key]!['bc_km_sum']! + log.tripKm);
+        yearly[key]!['bc_weighted_sum'] = (yearly[key]!['bc_weighted_sum']! + bc * log.tripKm);
       }
     }
     final sorted = yearly.entries.toList()..sort((a, b) => a.key.compareTo(b.key));

@@ -88,7 +88,12 @@ class DatabaseService {
       SELECT
         COALESCE(SUM(costs), 0) as total_costs,
         COALESCE(SUM(liters), 0) as total_liters,
-        COALESCE(AVG(CASE WHEN consumption_bordcomputer IS NOT NULL THEN consumption_bordcomputer END), 0) as avg_consumption_bc,
+        -- BC weighted: sum(bc * trip_km) / sum(trip_km) for rows with BC
+        COALESCE(
+          CASE WHEN SUM(CASE WHEN consumption_bordcomputer IS NOT NULL THEN trip_km END) > 0
+          THEN SUM(CASE WHEN consumption_bordcomputer IS NOT NULL THEN consumption_bordcomputer * trip_km END)
+               / SUM(CASE WHEN consumption_bordcomputer IS NOT NULL THEN trip_km END)
+          ELSE 0 END, 0) as avg_consumption_bc,
         COALESCE(AVG(euro_per_liter), 0) as avg_price,
         COALESCE(SUM(trip_km), 0) as total_km,
         COALESCE(SUM(liters), 0) as sum_liters,
