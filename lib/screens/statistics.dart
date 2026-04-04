@@ -176,20 +176,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           children: [
             Expanded(
               child: StatCard(
-                title: 'Ø Preis/L',
-                value: '${(_stats['avg_price'] ?? 0).toStringAsFixed(3)} €',
-                icon: Icons.price_change,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Expanded(child: SizedBox()),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: StatCard(
                 title: 'Gesamtkosten',
                 value: '${(_stats['total_costs'] ?? 0).toStringAsFixed(2)} €',
                 icon: Icons.euro,
@@ -198,9 +184,29 @@ class _StatisticsScreenState extends State<StatisticsScreen>
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
+                title: 'Ø Preis/L',
+                value: '${(_stats['avg_price'] ?? 0).toStringAsFixed(3)} €',
+                icon: Icons.price_change,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
                 title: 'Gesamtliter',
                 value: '${(_stats['total_liters'] ?? 0).toStringAsFixed(1)} L',
                 icon: Icons.opacity,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                title: 'Tankstopps',
+                value: '${_logs.length}x',
+                icon: Icons.local_gas_station,
               ),
             ),
           ],
