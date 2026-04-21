@@ -46,7 +46,7 @@ val isReleaseTaskRequested =
 
 android {
     namespace = "de.logge.dieseldusel"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
