@@ -1,14 +1,18 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- External-storage permissions only needed up to API 28 (Scoped Storage/MediaStore on 29+). -->
+    <!-- External-storage permissions only needed up to API 28 (Scoped Storage/MediaStore on 29+).
+         tools:replace overrides open_filex which declares maxSdkVersion=32. -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28"/>
+        android:maxSdkVersion="28"
+        tools:replace="android:maxSdkVersion"/>
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28"/>
+        android:maxSdkVersion="28"
+        tools:replace="android:maxSdkVersion"/>
     <application
         android:label="DieselDusel"
         android:name="${applicationName}"
