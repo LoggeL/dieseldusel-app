@@ -90,6 +90,12 @@ android {
                         "ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD.",
                 )
             }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
