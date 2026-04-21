@@ -74,7 +74,7 @@ $FLUTTER test || die "Tests failed. Fix before releasing."
 
 # ── Build APK ────────────────────────────────────────────────────────────────
 log "Building release APK..."
-$FLUTTER build apk --release --no-shrink
+$FLUTTER build apk --release
 APK="build/app/outputs/flutter-apk/app-release.apk"
 [ -f "$APK" ] || die "APK not found at $APK"
 log "APK built: $(du -sh $APK | cut -f1)"
