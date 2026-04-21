@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -135,20 +136,41 @@ class AppUpdater {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Update ${update['version']}'),
-        content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(update['name'],
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              if (update['body'].toString().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(update['body'],
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13)),
-              ],
-            ]),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(update['name'],
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (update['body'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: Markdown(
+                      data: update['body'].toString(),
+                      shrinkWrap: true,
+                      selectable: true,
+                      padding: EdgeInsets.zero,
+                      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(ctx))
+                          .copyWith(
+                        p: const TextStyle(fontSize: 13),
+                        code: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                      ),
+                      onTapLink: (text, href, title) async {
+                        if (href == null) return;
+                        final uri = Uri.tryParse(href);
+                        if (uri != null) {
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ]),
+        ),
         actions: [
           TextButton(
             onPressed: () async {

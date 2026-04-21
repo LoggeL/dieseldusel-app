@@ -1,7 +1,7 @@
 name: dieseldusel
 description: "DieselDusel - Fahrtenbuch App"
 publish_to: 'none'
-version: 1.9.9+29
+version: 1.9.10+30
 
 environment:
   sdk: ^3.8.1
@@ -25,6 +25,7 @@ dependencies:
   package_info_plus: ^9.0.1
   excel: ^4.0.6
   excel2003: ^1.0.0
+  flutter_markdown: ^0.7.6
 
 dev_dependencies:
   sqflite_common_ffi: ^2.3.3
