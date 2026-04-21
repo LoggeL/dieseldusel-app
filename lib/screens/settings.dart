@@ -94,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _importData() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv', 'txt', 'xls', 'xlsx'],
     );
@@ -207,9 +207,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final file = File('${dir.path}/dieseldusel_backup.json');
     await file.writeAsString(jsonData);
 
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: 'DieselDusel Backup - $name',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: 'DieselDusel Backup - $name',
+      ),
     );
   }
 
