@@ -20,7 +20,7 @@ class DatabaseService {
     final path = join(dbPath, 'dieseldusel.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE fuel_logs (
@@ -36,6 +36,9 @@ class DatabaseService {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         ''');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_fuel_logs_date ON fuel_logs(date)',
+        );
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -45,6 +48,11 @@ class DatabaseService {
         }
         // Version 3: consumption column removed (not read/written anymore).
         // SQLite doesn't support DROP COLUMN — we simply stop using it.
+        if (oldVersion < 4) {
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_fuel_logs_date ON fuel_logs(date)',
+          );
+        }
       },
     );
   }

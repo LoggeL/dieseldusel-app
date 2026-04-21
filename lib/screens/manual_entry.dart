@@ -172,20 +172,30 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       note: _noteCtrl.text,
     );
 
-    if (_isEditingPersistedLog) {
-      await _db.updateLog(log);
-    } else {
-      final newId = await _db.insertLog(log);
-      // Save scan image if setting is enabled
-      if (widget.sourceImagePath != null) {
-        final prefs = await SharedPreferences.getInstance();
-        final saveImages = prefs.getBool('save_scan_images') ?? false;
-        if (saveImages) {
-          try {
-            await ImageStorageService().saveImage(newId, widget.sourceImagePath!);
-          } catch (_) {}
+    try {
+      if (_isEditingPersistedLog) {
+        await _db.updateLog(log);
+      } else {
+        final newId = await _db.insertLog(log);
+        // Save scan image if setting is enabled
+        if (widget.sourceImagePath != null) {
+          final prefs = await SharedPreferences.getInstance();
+          final saveImages = prefs.getBool('save_scan_images') ?? false;
+          if (saveImages) {
+            try {
+              await ImageStorageService()
+                  .saveImage(newId, widget.sourceImagePath!);
+            } catch (_) {}
+          }
         }
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
+        );
+      }
+      return;
     }
 
     if (mounted) Navigator.pop(context, true);

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Disable cloud and device-transfer backups of app data to prevent
+    shipping the OpenRouter API key (in SharedPreferences) and the fuel
+    logs database across devices without explicit user action.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root"/>
+        <exclude domain="database"/>
+        <exclude domain="sharedpref"/>
+        <exclude domain="external"/>
+        <exclude domain="file"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root"/>
+        <exclude domain="database"/>
+        <exclude domain="sharedpref"/>
+        <exclude domain="external"/>
+        <exclude domain="file"/>
+    </device-transfer>
+</data-extraction-rules>

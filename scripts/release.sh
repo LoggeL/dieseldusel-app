@@ -9,12 +9,9 @@ set -e
 # ── Config ──────────────────────────────────────────────────────────────────
 FLUTTER="/home/logge/flutter/bin/flutter"
 REPO="LoggeL/dieseldusel-app"
-TOKEN=$(python3 -c "
-import re
-text = open('/home/logge/.git-credentials').read()
-m = re.search(r'https://LoggeL:(gho_[^@]+)@github', text)
-print(m.group(1) if m else '')
-")
+# Prefer gh auth token so we never parse ~/.git-credentials.
+TOKEN="${GH_TOKEN:-$(gh auth token 2>/dev/null || true)}"
+[ -n "$TOKEN" ] || { echo "❌ No GitHub token. Run 'gh auth login' or set GH_TOKEN." >&2; exit 1; }
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 die() { echo "❌ $*" >&2; exit 1; }

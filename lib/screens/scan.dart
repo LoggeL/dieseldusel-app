@@ -16,6 +16,8 @@ enum ScanStep {
   review
 }
 
+enum ScanKind { dashboard, receipt }
+
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
   @override
@@ -31,7 +33,7 @@ class _ScanScreenState extends State<ScanScreen> {
   double? _consumption, _tripKm, _pricePerLiter, _totalCost, _liters;
   int? _totalKm;
   String? _scanDate;
-  String _firstType = ''; // 'dashboard' or 'receipt'
+  ScanKind? _firstType;
   String? _firstImagePath;
   String? _secondImagePath;
 
@@ -115,8 +117,9 @@ class _ScanScreenState extends State<ScanScreen> {
     final imagePath = image.path;
 
     setState(() {
-      _step =
-          _firstType.isEmpty ? ScanStep.scanningFirst : ScanStep.scanningSecond;
+      _step = _firstType == null
+          ? ScanStep.scanningFirst
+          : ScanStep.scanningSecond;
       _error = null;
     });
 
@@ -142,8 +145,8 @@ class _ScanScreenState extends State<ScanScreen> {
         _consumption = consumption ?? _consumption;
         _totalKm = totalKm ?? _totalKm;
         _tripKm = tripKm ?? _tripKm;
-        if (_firstType.isEmpty) {
-          _firstType = 'dashboard';
+        if (_firstType == null) {
+          _firstType = ScanKind.dashboard;
           _firstImagePath = imagePath;
           _step = ScanStep.chooseSecond;
         } else {
@@ -154,8 +157,9 @@ class _ScanScreenState extends State<ScanScreen> {
     } catch (e) {
       setState(() {
         _error = 'Scan fehlgeschlagen: $e';
-        _step =
-            _firstType.isEmpty ? ScanStep.chooseFirst : ScanStep.chooseSecond;
+        _step = _firstType == null
+            ? ScanStep.chooseFirst
+            : ScanStep.chooseSecond;
       });
     }
   }
@@ -172,8 +176,9 @@ class _ScanScreenState extends State<ScanScreen> {
     final imagePath = image.path;
 
     setState(() {
-      _step =
-          _firstType.isEmpty ? ScanStep.scanningFirst : ScanStep.scanningSecond;
+      _step = _firstType == null
+          ? ScanStep.scanningFirst
+          : ScanStep.scanningSecond;
       _error = null;
     });
 
@@ -205,8 +210,8 @@ class _ScanScreenState extends State<ScanScreen> {
         _totalCost = totalCost ?? _totalCost;
         _liters = liters ?? _liters;
         _scanDate = scanDate ?? _scanDate;
-        if (_firstType.isEmpty) {
-          _firstType = 'receipt';
+        if (_firstType == null) {
+          _firstType = ScanKind.receipt;
           _firstImagePath = imagePath;
           _step = ScanStep.chooseSecond;
         } else {
@@ -217,8 +222,9 @@ class _ScanScreenState extends State<ScanScreen> {
     } catch (e) {
       setState(() {
         _error = 'Scan fehlgeschlagen: $e';
-        _step =
-            _firstType.isEmpty ? ScanStep.chooseFirst : ScanStep.chooseSecond;
+        _step = _firstType == null
+            ? ScanStep.chooseFirst
+            : ScanStep.chooseSecond;
       });
     }
   }
@@ -251,7 +257,7 @@ class _ScanScreenState extends State<ScanScreen> {
   void _reset() {
     setState(() {
       _step = ScanStep.chooseFirst;
-      _firstType = '';
+      _firstType = null;
       _consumption = null;
       _totalKm = null;
       _tripKm = null;
@@ -398,7 +404,7 @@ class _ScanScreenState extends State<ScanScreen> {
                                     color: Color(0xFF4CAF50), size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                    '${_firstType == "dashboard" ? "Armaturenbrett" : "Kassenzettel"} gescannt ✓',
+                                    '${_firstType == ScanKind.dashboard ? "Armaturenbrett" : "Kassenzettel"} gescannt ✓',
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF4CAF50))),
@@ -427,11 +433,11 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                          'Jetzt ${_firstType == "dashboard" ? "Kassenzettel" : "Armaturenbrett"} scannen:',
+                          'Jetzt ${_firstType == ScanKind.dashboard ? "Kassenzettel" : "Armaturenbrett"} scannen:',
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
-                      if (_firstType == 'dashboard')
+                      if (_firstType == ScanKind.dashboard)
                         _bigButton(Icons.receipt_long, 'Kassenzettel scannen',
                             'Preis, Liter, Datum', _scanReceipt)
                       else

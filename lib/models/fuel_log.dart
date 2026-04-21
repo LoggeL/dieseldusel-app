@@ -87,7 +87,10 @@ class FuelLog {
   }
 
   String toCsvRow() {
-    return '$date;$totalKm;$tripKm;$liters;$costs;$euroPerLiter;${consumptionBordcomputer ?? ''};$note';
+    // Sanitize note: the importer splits on ; literally, so strip delimiters
+    // and line breaks that would otherwise corrupt re-imports.
+    final safeNote = note.replaceAll(RegExp(r'[;\r\n]+'), ' ').trim();
+    return '$date;$totalKm;$tripKm;$liters;$costs;$euroPerLiter;${consumptionBordcomputer ?? ''};$safeNote';
   }
 
   static String csvHeader() {

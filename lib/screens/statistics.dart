@@ -1,9 +1,9 @@
-import 'berechnungsgrundlagen_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/database.dart';
 import '../models/fuel_log.dart';
 import '../widgets/stat_card.dart';
+import 'berechnungsgrundlagen_screen.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -401,8 +401,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     borderData: FlBorderData(show: false),
                     barGroups: displayEntries.asMap().entries.map((e) {
                       final d = e.value.value;
-                      final fillCount = d['fill_count']!;
-                      final avgConsumption = fillCount > 0 ? d['consumption_sum']! / fillCount : 0.0;
+                      final km = d['km']!;
+                      final avgConsumption = km > 0 ? d['liters']! / km * 100 : 0.0;
                       return BarChartGroupData(
                         x: e.key,
                         barRods: [
@@ -444,8 +444,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 ...displayEntries.reversed.map((entry) {
                   final key = entry.key;
                   final d = entry.value;
-                  final fillCount = d['fill_count']!;
-                  final avgConsumption = fillCount > 0 ? d['consumption_sum']! / fillCount : 0.0;
+                  final km = d['km']!;
+                  final avgConsumption = km > 0 ? d['liters']! / km * 100 : 0.0;
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
@@ -551,8 +551,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         ...entries.reversed.map((entry) {
           final year = entry.key;
           final d = entry.value;
-          final fillCount = d['fill_count']!;
-          final avgConsumption = fillCount > 0 ? d['consumption_sum']! / fillCount : 0.0;
+          final km = d['km']!;
+          final avgConsumption = km > 0 ? d['liters']! / km * 100 : 0.0;
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: Padding(

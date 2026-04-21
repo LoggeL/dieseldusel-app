@@ -111,8 +111,10 @@ class AppUpdater {
   }
 
   static bool _isNewer(String remote, String local) {
-    final r = remote.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    final l = local.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    // Strip prerelease/build suffixes (e.g. "1.9.8-beta.1" → "1.9.8").
+    String core(String v) => v.split(RegExp(r'[-+]')).first;
+    final r = core(remote).split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final l = core(local).split('.').map((e) => int.tryParse(e) ?? 0).toList();
     while (r.length < 3) { r.add(0); }
     while (l.length < 3) { l.add(0); }
     for (int i = 0; i < 3; i++) {
@@ -149,9 +151,9 @@ class AppUpdater {
             ]),
         actions: [
           TextButton(
-            onPressed: () {
-              prefs.setString('dismissed_update', update['version']);
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await prefs.setString('dismissed_update', update['version']);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Später'),
           ),
@@ -210,28 +212,33 @@ class AppUpdater {
       ),
     );
 
+    final client = http.Client();
     try {
       final request = http.Request('GET', Uri.parse(url));
-      final response = await http.Client().send(request);
+      final response = await client.send(request);
       final totalBytes = response.contentLength ?? 0;
-      final bytes = <int>[];
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/dieseldusel-$version.apk');
+      final sink = file.openWrite();
       int received = 0;
 
       statusNotifier.value = 'Lade APK herunter...';
 
-      await for (final chunk in response.stream) {
-        bytes.addAll(chunk);
-        received += chunk.length;
-        if (totalBytes > 0) {
-          progressNotifier.value = received / totalBytes;
+      try {
+        await for (final chunk in response.stream) {
+          sink.add(chunk);
+          received += chunk.length;
+          if (totalBytes > 0) {
+            progressNotifier.value = received / totalBytes;
+          }
+          statusNotifier.value =
+              '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
         }
-        statusNotifier.value =
-            '${(received / 1024 / 1024).toStringAsFixed(1)} MB geladen';
+      } finally {
+        await sink.flush();
+        await sink.close();
       }
-
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/dieseldusel-$version.apk');
-      await file.writeAsBytes(bytes);
 
       statusNotifier.value = 'Installiere...';
 
@@ -252,6 +259,8 @@ class AppUpdater {
           SnackBar(content: Text('Download fehlgeschlagen: $e')),
         );
       }
+    } finally {
+      client.close();
     }
   }
 
